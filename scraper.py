@@ -11,7 +11,7 @@ import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import database as db
-from sources import realforeclose
+from sources import realforeclose, floridapublicnotices
 from valuations import zillow, redfin, county_appraiser
 
 logger = logging.getLogger(__name__)
@@ -63,7 +63,12 @@ def run_full_scrape(max_counties: int = None):
             _set_state(current=county_name, done=done, total=total)
 
         listings = realforeclose.scrape(max_counties=max_counties, progress_cb=progress_cb)
-        logger.info("Found %d listings total", len(listings))
+        logger.info("RealForeclose: %d listings", len(listings))
+
+        fpn_listings = floridapublicnotices.scrape(progress_cb=progress_cb)
+        listings.extend(fpn_listings)
+        logger.info("FloridaPublicNotices: %d listings", len(fpn_listings))
+        logger.info("Combined total: %d listings", len(listings))
 
         property_ids = []
         for listing in listings:
