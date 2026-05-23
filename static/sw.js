@@ -1,4 +1,4 @@
-const CACHE = 'fl-arb-v1';
+const CACHE = 'fl-arb-v2';
 const SHELL = ['/', '/static/manifest.json', '/static/icon.svg'];
 
 self.addEventListener('install', e => {
