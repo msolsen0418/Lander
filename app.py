@@ -51,11 +51,6 @@ def dashboard():
     return render_template("index.html")
 
 
-@app.route("/health")
-def health():
-    return {"status": "ok"}, 200
-
-
 @app.route("/sw.js")
 def service_worker():
     resp = send_from_directory("static", "sw.js", mimetype="application/javascript")
