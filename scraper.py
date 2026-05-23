@@ -88,7 +88,8 @@ def run_full_scrape(max_counties: int = None):
 
     except Exception as exc:
         logger.error("Scrape failed: %s", exc, exc_info=True)
-        _set_state(running=False, phase="error", current=str(exc))
+        short = str(exc)[:120]
+        _set_state(running=False, phase="error", current=short)
 
 
 def _enrich_property(property_id: int, listing: dict):
