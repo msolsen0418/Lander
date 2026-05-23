@@ -1,0 +1,19 @@
+{
+  "name": "FL Property Arbitrage",
+  "short_name": "FL Arbitrage",
+  "description": "Florida property auction vs market value scanner",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0f172a",
+  "theme_color": "#1e293b",
+  "categories": ["finance", "utilities"],
+  "icons": [
+    {
+      "src": "/static/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -4,7 +4,7 @@ Flask web server for the Florida Property Arbitrage Dashboard.
 
 import json
 import logging
-from flask import Flask, jsonify, render_template, request, Response, stream_with_context
+from flask import Flask, jsonify, render_template, request, Response, stream_with_context, send_from_directory
 
 import database as db
 import scraper
@@ -24,6 +24,15 @@ def ensure_db():
 @app.route("/")
 def dashboard():
     return render_template("index.html")
+
+
+@app.route("/sw.js")
+def service_worker():
+    # Must be served from root path so its scope covers the whole app
+    resp = send_from_directory("static", "sw.js", mimetype="application/javascript")
+    resp.headers["Service-Worker-Allowed"] = "/"
+    resp.headers["Cache-Control"] = "no-cache"
+    return resp
 
 
 # ── API ──────────────────────────────────────────────────────────────────────

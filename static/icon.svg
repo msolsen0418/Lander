@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
+  <rect width="192" height="192" rx="40" fill="#1e293b"/>
+  <path d="M96 36 L156 96 H132 V156 H108 V120 H84 V156 H60 V96 H36 Z" fill="#22c55e"/>
+  <path d="M72 48 L72 36 L54 36 L54 68" stroke="#22c55e" stroke-width="6" fill="none" stroke-linecap="round"/>
+  <text x="96" y="182" font-family="system-ui" font-size="14" fill="#64748b" text-anchor="middle" font-weight="600">ARBITRAGE</text>
+</svg>
