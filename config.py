@@ -1,6 +1,10 @@
 import os
 
-DATABASE_PATH = os.getenv("DATABASE_PATH", "properties.db")
+# DB_DIR is set to /data when a Railway/Render persistent volume is mounted there.
+# Falls back to the current directory for local dev.
+_DB_DIR = os.getenv("DB_DIR", ".")
+os.makedirs(_DB_DIR, exist_ok=True)
+DATABASE_PATH = os.path.join(_DB_DIR, "properties.db")
 
 # How long to cache valuations before re-fetching (seconds)
 VALUATION_CACHE_TTL = 6 * 3600  # 6 hours
