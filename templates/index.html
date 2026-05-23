@@ -35,7 +35,6 @@
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
       -webkit-font-smoothing: antialiased; }
 
-    /* ── Layout shell ──────────────────────────────────────── */
     body { display: flex; flex-direction: column; }
 
     header {
@@ -61,7 +60,6 @@
       border-radius: 50%; animation: spin .6s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ── Progress ──────────────────────────────────────────── */
     #progress-banner {
       background: var(--surf2); border-bottom: 1px solid var(--border);
       padding: 0.5rem 1rem; display: none;
@@ -71,7 +69,6 @@
     .progress-fill { background: var(--green); height: 100%; width: 0%; transition: width .3s ease; border-radius: 4px; }
     .progress-text { font-size: 0.72rem; color: var(--muted); display: flex; justify-content: space-between; }
 
-    /* ── Stats strip ────────────────────────────────────────── */
     .stats-strip {
       display: flex; gap: 0.6rem; overflow-x: auto; padding: 0.75rem 1rem;
       scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch;
@@ -85,7 +82,6 @@
     .stat-chip .s-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
     .stat-chip .s-value { font-size: 1.35rem; font-weight: 700; line-height: 1.2; margin-top: 2px; }
 
-    /* ── Controls bar ───────────────────────────────────────── */
     .controls {
       background: var(--surf); border-bottom: 1px solid var(--border);
       padding: 0.6rem 1rem; display: flex; flex-direction: column; gap: 0.5rem;
@@ -104,9 +100,7 @@
     }
     #btn-filter-toggle.active { border-color: var(--blue); color: var(--blue); }
 
-    .filter-panel {
-      display: none; flex-direction: column; gap: 0.4rem;
-    }
+    .filter-panel { display: none; flex-direction: column; gap: 0.4rem; }
     .filter-panel.open { display: flex; }
     .filter-row { display: flex; gap: 0.4rem; flex-wrap: wrap; }
     select.f-select, input.f-input {
@@ -122,7 +116,6 @@
       -webkit-tap-highlight-color: transparent; }
     .btn-clear:active { color: var(--red); border-color: var(--red); }
 
-    /* ── Sort bar ───────────────────────────────────────────── */
     .sort-bar {
       display: flex; align-items: center; gap: 0.4rem; padding: 0.5rem 1rem;
       overflow-x: auto; border-bottom: 1px solid var(--border);
@@ -139,7 +132,6 @@
     .sort-btn.asc::after { content: ' ↑'; }
     .sort-btn.desc::after { content: ' ↓'; }
 
-    /* ── Cards list ─────────────────────────────────────────── */
     main { flex: 1; overflow-y: auto; padding: 0.75rem 1rem 1.5rem; }
     main::-webkit-scrollbar { width: 4px; }
     main::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
@@ -148,14 +140,11 @@
     .empty-icon { font-size: 3rem; margin-bottom: 0.75rem; }
     .empty-state strong { color: var(--text); }
 
-    /* ── Property card ──────────────────────────────────────── */
     .prop-card {
       background: var(--surf); border: 1px solid var(--border); border-radius: var(--radius);
-      margin-bottom: 0.6rem; overflow: hidden;
-      transition: border-color .15s;
+      margin-bottom: 0.6rem; overflow: hidden; transition: border-color .15s;
     }
     .prop-card.expanded { border-color: #475569; }
-
     .card-main {
       display: flex; align-items: stretch; gap: 0; cursor: pointer;
       -webkit-tap-highlight-color: transparent;
@@ -165,35 +154,26 @@
     .prop-address { font-weight: 600; font-size: 0.92rem;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .prop-location { font-size: 0.75rem; color: var(--muted); margin-top: 2px; margin-bottom: 6px; }
-
     .prop-chips { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
-    .chip {
-      font-size: 0.68rem; font-weight: 500; padding: 2px 7px; border-radius: 20px;
-      white-space: nowrap;
-    }
+    .chip { font-size: 0.68rem; font-weight: 500; padding: 2px 7px; border-radius: 20px; white-space: nowrap; }
     .chip-county  { background: #1d4ed822; color: #93c5fd; border: 1px solid #1d4ed844; }
     .chip-taxdeed { background: #7c3aed22; color: #c4b5fd; border: 1px solid #7c3aed44; }
     .chip-fore    { background: #b4530022; color: #fdba74; border: 1px solid #b4530044; }
     .chip-surp    { background: #0f766e22; color: #5eead4; border: 1px solid #0f766e44; }
     .chip-date    { color: var(--muted); font-size: 0.7rem; }
-
     .prop-numbers { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
-    .num-group { }
     .num-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
     .num-value { font-size: 0.95rem; font-weight: 600; }
     .num-arrow { color: var(--muted); font-size: 0.9rem; }
 
-    /* Equity badge (right side of card) */
     .equity-badge {
       width: 76px; flex-shrink: 0;
       display: flex; flex-direction: column; align-items: center; justify-content: center;
-      gap: 3px; padding: 0.75rem 0.5rem;
-      border-left: 1px solid var(--border);
+      gap: 3px; padding: 0.75rem 0.5rem; border-left: 1px solid var(--border);
     }
     .eq-pct { font-size: 1.1rem; font-weight: 800; line-height: 1; }
     .eq-amt { font-size: 0.65rem; text-align: center; line-height: 1.3; }
-    .eq-none .eq-pct { color: var(--muted); }
-    .eq-none .eq-amt { color: var(--muted); }
+    .eq-none .eq-pct, .eq-none .eq-amt { color: var(--muted); }
     .eq-pos { background: #14532d18; }
     .eq-pos .eq-pct { color: var(--green); }
     .eq-pos .eq-amt { color: #86efac; }
@@ -201,16 +181,11 @@
     .eq-neg .eq-pct { color: var(--red); }
     .eq-neg .eq-amt { color: #fca5a5; }
 
-    /* Expand chevron */
-    .card-chevron {
-      position: absolute; right: 86px; bottom: 8px;
-      color: var(--muted); font-size: 0.7rem; pointer-events: none;
-    }
     .prop-card { position: relative; }
+    .card-chevron { position: absolute; right: 86px; bottom: 8px; color: var(--muted); font-size: 0.7rem; pointer-events: none; }
     .prop-card.expanded .card-chevron::after { content: '▲'; }
     .prop-card:not(.expanded) .card-chevron::after { content: '▼'; }
 
-    /* Expanded details */
     .card-details {
       border-top: 1px solid var(--border); padding: 0.75rem 0.9rem;
       display: none; flex-direction: column; gap: 0.6rem;
@@ -234,13 +209,11 @@
     .listing-link {
       display: flex; align-items: center; justify-content: center; gap: 6px;
       background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
-      padding: 0.55rem; text-decoration: none; color: var(--text); font-size: 0.85rem;
-      font-weight: 500;
+      padding: 0.55rem; text-decoration: none; color: var(--text); font-size: 0.85rem; font-weight: 500;
       -webkit-tap-highlight-color: transparent;
     }
     .listing-link:active { background: var(--surf2); }
 
-    /* ── Install prompt ─────────────────────────────────────── */
     #install-banner {
       display: none; align-items: center; gap: 0.75rem; flex-wrap: wrap;
       background: #1e3a5f; border: 1px solid #2563eb55; border-radius: 10px;
@@ -252,7 +225,6 @@
     #btn-install-dismiss { background: none; border: none; color: var(--muted); font-size: 1rem;
       cursor: pointer; margin-left: auto; line-height: 1; }
 
-    /* ── Offline toast ──────────────────────────────────────── */
     #offline-toast {
       display: none; position: fixed; bottom: calc(1rem + var(--safe-b)); left: 50%;
       transform: translateX(-50%);
@@ -262,7 +234,6 @@
     }
     #offline-toast.visible { display: block; }
 
-    /* ── Responsive: desktop sidebar-style on large screens ─── */
     @media (min-width: 768px) {
       .stats-strip { gap: 0.75rem; padding: 0.85rem 1.25rem; }
       .stat-chip { min-width: 130px; }
@@ -270,9 +241,7 @@
       .filter-panel { flex-direction: row; flex-wrap: wrap; }
       .filter-row { flex-wrap: nowrap; }
       main { padding: 1rem 1.25rem 2rem; }
-      .val-grid { grid-template-columns: repeat(3, 1fr); }
     }
-
     @media (min-width: 1024px) {
       body { max-width: 960px; margin: 0 auto; }
       .prop-card { margin-bottom: 0.75rem; }
@@ -281,14 +250,10 @@
       .equity-badge { width: 90px; }
       .eq-pct { font-size: 1.25rem; }
     }
-
-    /* Screen-reader skip */
-    .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
   </style>
 </head>
 <body>
 
-<!-- ── Header ── -->
 <header>
   <span class="app-logo" aria-hidden="true">🏠</span>
   <div class="app-title">
@@ -300,7 +265,6 @@
   </button>
 </header>
 
-<!-- ── Progress banner ── -->
 <div id="progress-banner" role="status" aria-live="polite">
   <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
   <div class="progress-text">
@@ -309,48 +273,28 @@
   </div>
 </div>
 
-<!-- ── Install prompt ── -->
-<div id="install-banner" role="complementary" aria-label="Install app">
+<div id="install-banner" role="complementary">
   <span>📲 Add to Home Screen for quick access</span>
   <button id="btn-install">Install</button>
   <button id="btn-install-dismiss" aria-label="Dismiss">✕</button>
 </div>
 
-<!-- ── Stats strip ── -->
 <div class="stats-strip" role="region" aria-label="Summary statistics">
-  <div class="stat-chip">
-    <div class="s-label">Listings</div>
-    <div class="s-value" id="stat-total">—</div>
-  </div>
-  <div class="stat-chip">
-    <div class="s-label">+ Equity</div>
-    <div class="s-value" id="stat-pos" style="color:var(--green)">—</div>
-  </div>
-  <div class="stat-chip">
-    <div class="s-label">Avg Gap</div>
-    <div class="s-value" id="stat-avg">—</div>
-  </div>
-  <div class="stat-chip">
-    <div class="s-label">Best Gap</div>
-    <div class="s-value" id="stat-best" style="color:var(--green)">—</div>
-  </div>
+  <div class="stat-chip"><div class="s-label">Listings</div><div class="s-value" id="stat-total">—</div></div>
+  <div class="stat-chip"><div class="s-label">+ Equity</div><div class="s-value" id="stat-pos" style="color:var(--green)">—</div></div>
+  <div class="stat-chip"><div class="s-label">Avg Gap</div><div class="s-value" id="stat-avg">—</div></div>
+  <div class="stat-chip"><div class="s-label">Best Gap</div><div class="s-value" id="stat-best" style="color:var(--green)">—</div></div>
 </div>
 
-<!-- ── Controls ── -->
 <div class="controls">
   <div class="search-row">
-    <input type="search" id="search-input" class="search-input"
-      placeholder="Search address or county…" aria-label="Search properties" />
-    <button id="btn-filter-toggle" aria-expanded="false" aria-controls="filter-panel">
-      Filters ⚙
-    </button>
+    <input type="search" id="search-input" class="search-input" placeholder="Search address or county…" aria-label="Search properties" />
+    <button id="btn-filter-toggle" aria-expanded="false">Filters ⚙</button>
   </div>
-  <div class="filter-panel" id="filter-panel" role="group" aria-label="Filters">
+  <div class="filter-panel" id="filter-panel">
     <div class="filter-row">
-      <select id="filter-county" class="f-select" aria-label="Filter by county">
-        <option value="">All Counties</option>
-      </select>
-      <select id="filter-type" class="f-select" aria-label="Filter by auction type">
+      <select id="filter-county" class="f-select"><option value="">All Counties</option></select>
+      <select id="filter-type" class="f-select">
         <option value="">All Types</option>
         <option value="tax_deed">Tax Deed</option>
         <option value="foreclosure">Foreclosure</option>
@@ -358,14 +302,12 @@
       </select>
     </div>
     <div class="filter-row">
-      <input type="number" id="filter-equity" class="f-input"
-        placeholder="Min equity %" aria-label="Minimum equity percent" />
+      <input type="number" id="filter-equity" class="f-input" placeholder="Min equity %" />
       <button class="btn-clear" id="btn-clear">Clear filters</button>
     </div>
   </div>
 </div>
 
-<!-- ── Sort bar ── -->
 <div class="sort-bar" role="group" aria-label="Sort options">
   <span class="sort-label">Sort:</span>
   <button class="sort-btn active desc" data-sort="equity_pct">Equity %</button>
@@ -374,8 +316,7 @@
   <button class="sort-btn" data-sort="best_estimate">Estimate</button>
 </div>
 
-<!-- ── Cards ── -->
-<main id="cards-list" role="main" aria-label="Property listings">
+<main id="cards-list" role="main">
   <div class="empty-state">
     <div class="empty-icon">🏘️</div>
     <div>Tap <strong>Scrape</strong> to fetch listings</div>
@@ -383,33 +324,26 @@
   </div>
 </main>
 
-<!-- ── Offline toast ── -->
 <div id="offline-toast" role="alert">⚠ Offline — showing cached data</div>
 
 <script>
-// ─── State ────────────────────────────────────────────────────────────────
 let allProps = [];
 let sortKey = 'equity_pct';
-let sortDir = -1; // -1 = desc
+let sortDir = -1;
 let deferredInstall = null;
+let _pollTimer = null;
 
-// ─── Helpers ──────────────────────────────────────────────────────────────
 const fmt$ = v => v == null ? '—' : '$' + Math.round(v).toLocaleString();
 const fmtPct = v => v == null ? '—' : (v > 0 ? '+' : '') + v.toFixed(1) + '%';
-const fmtDate = s => {
-  if (!s) return '—';
-  const m = s.match(/(\d{4})-(\d{2})-(\d{2})/);
-  return m ? `${m[2]}/${m[3]}/${m[1].slice(2)}` : s;
-};
+const fmtDate = s => { if (!s) return '—'; const m = s.match(/(\d{4})-(\d{2})-(\d{2})/); return m ? `${m[2]}/${m[3]}/${m[1].slice(2)}` : s; };
 const el = id => document.getElementById(id);
 
 function typeChip(t) {
-  if (t === 'tax_deed')     return `<span class="chip chip-taxdeed">Tax Deed</span>`;
-  if (t === 'foreclosure')  return `<span class="chip chip-fore">Foreclosure</span>`;
+  if (t === 'tax_deed')    return `<span class="chip chip-taxdeed">Tax Deed</span>`;
+  if (t === 'foreclosure') return `<span class="chip chip-fore">Foreclosure</span>`;
   return `<span class="chip chip-surp">Surplus</span>`;
 }
 
-// ─── Card rendering ────────────────────────────────────────────────────────
 function renderCard(p) {
   const eqPct = p.equity_gap_pct;
   const eqCls = eqPct == null ? 'eq-none' : eqPct >= 0 ? 'eq-pos' : 'eq-neg';
@@ -420,9 +354,8 @@ function renderCard(p) {
     if (!v) return `<div class="val-item v-none ${cls}"><span class="val-label">${label}</span><span class="val-amount">—</span></div>`;
     const amt = v.value ? fmt$(v.value) : '—';
     const inner = `<span class="val-label">${label}</span><span class="val-amount">${amt}</span>`;
-    return v.url
-      ? `<a href="${v.url}" target="_blank" rel="noopener" class="val-item ${cls}">${inner}</a>`
-      : `<div class="val-item ${cls}">${inner}</div>`;
+    return v.url ? `<a href="${v.url}" target="_blank" rel="noopener" class="val-item ${cls}">${inner}</a>`
+                 : `<div class="val-item ${cls}">${inner}</div>`;
   };
 
   const card = document.createElement('article');
@@ -439,15 +372,9 @@ function renderCard(p) {
           <span class="chip-date">${fmtDate(p.sale_date)}</span>
         </div>
         <div class="prop-numbers">
-          <div class="num-group">
-            <div class="num-label">Opening Bid</div>
-            <div class="num-value">${fmt$(p.opening_bid)}</div>
-          </div>
+          <div class="num-group"><div class="num-label">Opening Bid</div><div class="num-value">${fmt$(p.opening_bid)}</div></div>
           <div class="num-arrow">→</div>
-          <div class="num-group">
-            <div class="num-label">Best Est.</div>
-            <div class="num-value">${fmt$(p.best_estimate)}</div>
-          </div>
+          <div class="num-group"><div class="num-label">Best Est.</div><div class="num-value">${fmt$(p.best_estimate)}</div></div>
         </div>
       </div>
       <div class="equity-badge ${eqCls}" aria-label="Equity gap ${fmtPct(eqPct)}">
@@ -462,15 +389,11 @@ function renderCard(p) {
         ${valItem('zillow',  'v-zillow',  'Zillow')}
         ${valItem('redfin',  'v-redfin',  'Redfin')}
       </div>
-      ${p.source_url
-        ? `<a href="${p.source_url}" target="_blank" rel="noopener" class="listing-link">📋 View Listing ↗</a>`
-        : ''}
-    </div>
-  `;
+      ${p.source_url ? `<a href="${p.source_url}" target="_blank" rel="noopener" class="listing-link">📋 View Listing ↗</a>` : ''}
+    </div>`;
 
   const main = card.querySelector('.card-main');
   const details = card.querySelector('.card-details');
-
   function toggle() {
     const open = !card.classList.contains('expanded');
     card.classList.toggle('expanded', open);
@@ -478,13 +401,11 @@ function renderCard(p) {
     main.setAttribute('aria-expanded', String(open));
     details.setAttribute('aria-hidden', String(!open));
   }
-
   main.addEventListener('click', toggle);
   main.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }});
   return card;
 }
 
-// ─── Render list ───────────────────────────────────────────────────────────
 function renderList(props) {
   const list = el('cards-list');
   if (!props.length) {
@@ -496,18 +417,14 @@ function renderList(props) {
   list.replaceChildren(frag);
 }
 
-// ─── Filter + sort ─────────────────────────────────────────────────────────
 function getFiltered() {
   const q = el('search-input').value.trim().toLowerCase();
   const county = el('filter-county').value;
   const type = el('filter-type').value;
   const minEq = parseFloat(el('filter-equity').value);
-
   return allProps
     .filter(p => {
-      if (q && !(p.address || '').toLowerCase().includes(q) &&
-               !(p.county || '').toLowerCase().includes(q) &&
-               !(p.city || '').toLowerCase().includes(q)) return false;
+      if (q && !(p.address||'').toLowerCase().includes(q) && !(p.county||'').toLowerCase().includes(q) && !(p.city||'').toLowerCase().includes(q)) return false;
       if (county && p.county !== county) return false;
       if (type && p.auction_type !== type) return false;
       if (!isNaN(minEq) && (p.equity_gap_pct == null || p.equity_gap_pct < minEq)) return false;
@@ -516,25 +433,20 @@ function getFiltered() {
     .sort((a, b) => {
       let av = a[sortKey] ?? -Infinity;
       let bv = b[sortKey] ?? -Infinity;
-      if (sortKey === 'sale_date') { av = av || ''; bv = bv || ''; }
-      if (av < bv) return sortDir;
-      if (av > bv) return -sortDir;
-      return 0;
+      if (sortKey === 'sale_date') { av = av||''; bv = bv||''; }
+      return av < bv ? sortDir : av > bv ? -sortDir : 0;
     });
 }
 
 function refresh() { renderList(getFiltered()); }
 
-// ─── Load data ─────────────────────────────────────────────────────────────
 async function loadProperties() {
   try {
     const resp = await fetch('/api/properties');
     if (!resp.ok) throw new Error(resp.status);
     allProps = await resp.json();
     refresh();
-  } catch (e) {
-    console.warn('Properties fetch failed:', e);
-  }
+  } catch (e) { console.warn('Properties fetch failed:', e); }
 }
 
 async function loadStats() {
@@ -547,7 +459,6 @@ async function loadStats() {
     el('stat-avg').textContent   = s.avg_equity_gap_pct > 0 ? '+' + s.avg_equity_gap_pct + '%' : '—';
     el('stat-best').textContent  = s.best_equity_gap_pct > 0 ? '+' + s.best_equity_gap_pct + '%' : '—';
     el('last-updated').textContent = s.total_properties ? 'Tap card to expand details' : 'No data yet';
-
     const sel = el('filter-county');
     const cur = sel.value;
     sel.innerHTML = '<option value="">All Counties</option>';
@@ -557,15 +468,12 @@ async function loadStats() {
       if (c === cur) o.selected = true;
       sel.appendChild(o);
     });
-  } catch (e) {
-    console.warn('Stats fetch failed:', e);
-  }
+  } catch (e) { console.warn('Stats fetch failed:', e); }
 }
 
-// ─── Scrape ────────────────────────────────────────────────────────────────
+// ── Scrape with polling (no SSE — works reliably behind any proxy) ──────────
 function setScrapeRunning(running) {
-  const btn = el('btn-scrape');
-  btn.disabled = running;
+  el('btn-scrape').disabled = running;
   const lbl = el('scrape-btn-label');
   if (running) {
     lbl.textContent = '';
@@ -578,127 +486,105 @@ function setScrapeRunning(running) {
   el('progress-banner').classList.toggle('visible', running);
 }
 
-el('btn-scrape').addEventListener('click', async () => {
-  const state = await (await fetch('/api/scrape/status')).json();
-  if (state.running) return;
+function applyProgress(s) {
+  const pct = s.total > 0 ? Math.round(s.done / s.total * 100) : 0;
+  el('progress-fill').style.width = pct + '%';
+  el('progress-pct').textContent  = pct + '%';
+  el('progress-label').textContent =
+    s.phase === 'auctions'   ? `Auctions: ${s.current}` :
+    s.phase === 'valuations' ? `Valuations: ${s.current}` :
+    s.current || s.phase || 'Working…';
+}
 
+function startPolling() {
+  if (_pollTimer) clearInterval(_pollTimer);
+  _pollTimer = setInterval(async () => {
+    try {
+      const s = await fetch('/api/scrape/status').then(r => r.json());
+      applyProgress(s);
+      if (!s.running) {
+        clearInterval(_pollTimer);
+        _pollTimer = null;
+        setScrapeRunning(false);
+        if (s.phase === 'error') {
+          el('last-updated').textContent = '⚠ Scrape error — tap to retry';
+        } else {
+          el('last-updated').textContent = `Updated ${new Date().toLocaleTimeString()} · ${s.done||0} listings`;
+          setTimeout(() => el('progress-banner').classList.remove('visible'), 2500);
+          loadStats();
+          loadProperties();
+        }
+      }
+    } catch { /* network blip — keep polling */ }
+  }, 3000);
+}
+
+el('btn-scrape').addEventListener('click', async () => {
+  try {
+    const state = await fetch('/api/scrape/status').then(r => r.json());
+    if (state.running) { setScrapeRunning(true); applyProgress(state); startPolling(); return; }
+  } catch { return; }
   try {
     const r = await fetch('/api/scrape', { method: 'POST', headers: {'Content-Type':'application/json'}, body: '{}' });
-    if (r.status === 409) return; // already running
+    if (r.status === 409) { setScrapeRunning(true); startPolling(); return; }
     setScrapeRunning(true);
-  } catch {
-    return;
-  }
-
-  const evtSource = new EventSource('/api/scrape/stream');
-  evtSource.onmessage = e => {
-    const s = JSON.parse(e.data);
-    const pct = s.total > 0 ? Math.round(s.done / s.total * 100) : 0;
-    el('progress-fill').style.width = pct + '%';
-    el('progress-pct').textContent  = pct + '%';
-    el('progress-label').textContent =
-      s.phase === 'auctions'   ? `Auctions: ${s.current}` :
-      s.phase === 'valuations' ? `Valuations: ${s.current}` :
-      s.current || s.phase;
-
-    if (!s.running) {
-      evtSource.close();
-      setScrapeRunning(false);
-      const done = s.done || 0;
-      el('last-updated').textContent = `Updated ${new Date().toLocaleTimeString()} · ${done} listings`;
-      setTimeout(() => el('progress-banner').classList.remove('visible'), 2500);
-      loadStats();
-      loadProperties();
-    }
-  };
-  evtSource.onerror = () => {
-    evtSource.close();
-    setScrapeRunning(false);
-    el('last-updated').textContent = 'Connection lost';
-  };
+    startPolling();
+  } catch { el('last-updated').textContent = 'Could not reach server'; }
 });
 
-// ─── Sort buttons ──────────────────────────────────────────────────────────
+// ── Sort ──────────────────────────────────────────────────────────────────
 document.querySelectorAll('.sort-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     const key = btn.dataset.sort;
-    if (sortKey === key) {
-      sortDir *= -1;
-    } else {
-      sortKey = key;
-      sortDir = key === 'sale_date' ? 1 : -1;
-    }
-    document.querySelectorAll('.sort-btn').forEach(b => {
-      b.classList.remove('active','asc','desc');
-    });
+    if (sortKey === key) { sortDir *= -1; } else { sortKey = key; sortDir = key === 'sale_date' ? 1 : -1; }
+    document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active','asc','desc'));
     btn.classList.add('active', sortDir === 1 ? 'asc' : 'desc');
     refresh();
   });
 });
 
-// ─── Filters ───────────────────────────────────────────────────────────────
+// ── Filters ───────────────────────────────────────────────────────────────
 el('btn-filter-toggle').addEventListener('click', () => {
-  const panel = el('filter-panel');
-  const open = !panel.classList.contains('open');
-  panel.classList.toggle('open', open);
+  const open = !el('filter-panel').classList.contains('open');
+  el('filter-panel').classList.toggle('open', open);
   el('btn-filter-toggle').classList.toggle('active', open);
   el('btn-filter-toggle').setAttribute('aria-expanded', String(open));
 });
-
-['filter-county','filter-type'].forEach(id =>
-  el(id).addEventListener('change', refresh)
-);
-el('search-input').addEventListener('input', () => {
-  clearTimeout(window._st);
-  window._st = setTimeout(refresh, 250);
-});
-el('filter-equity').addEventListener('input', () => {
-  clearTimeout(window._et);
-  window._et = setTimeout(refresh, 300);
-});
+['filter-county','filter-type'].forEach(id => el(id).addEventListener('change', refresh));
+el('search-input').addEventListener('input', () => { clearTimeout(window._st); window._st = setTimeout(refresh, 250); });
+el('filter-equity').addEventListener('input', () => { clearTimeout(window._et); window._et = setTimeout(refresh, 300); });
 el('btn-clear').addEventListener('click', () => {
-  el('search-input').value = '';
-  el('filter-county').value = '';
-  el('filter-type').value = '';
-  el('filter-equity').value = '';
+  el('search-input').value = ''; el('filter-county').value = '';
+  el('filter-type').value = ''; el('filter-equity').value = '';
   refresh();
 });
 
-// ─── PWA Install prompt ────────────────────────────────────────────────────
-window.addEventListener('beforeinstallprompt', e => {
-  e.preventDefault();
-  deferredInstall = e;
-  el('install-banner').classList.add('visible');
-});
+// ── PWA install ───────────────────────────────────────────────────────────
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredInstall = e; el('install-banner').classList.add('visible'); });
 el('btn-install').addEventListener('click', async () => {
   if (!deferredInstall) return;
   deferredInstall.prompt();
-  const { outcome } = await deferredInstall.userChoice;
+  await deferredInstall.userChoice;
   deferredInstall = null;
   el('install-banner').classList.remove('visible');
 });
-el('btn-install-dismiss').addEventListener('click', () => {
-  el('install-banner').classList.remove('visible');
-});
+el('btn-install-dismiss').addEventListener('click', () => el('install-banner').classList.remove('visible'));
 
-// ─── Offline detection ─────────────────────────────────────────────────────
-function updateOnline() {
-  el('offline-toast').classList.toggle('visible', !navigator.onLine);
-}
-window.addEventListener('online',  updateOnline);
+// ── Offline ───────────────────────────────────────────────────────────────
+function updateOnline() { el('offline-toast').classList.toggle('visible', !navigator.onLine); }
+window.addEventListener('online', updateOnline);
 window.addEventListener('offline', updateOnline);
 
-// ─── Service Worker ────────────────────────────────────────────────────────
+// ── Service Worker ────────────────────────────────────────────────────────
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(e => console.warn('SW:', e));
 }
 
-// ─── Init ──────────────────────────────────────────────────────────────────
+// ── Init ──────────────────────────────────────────────────────────────────
 (async () => {
   updateOnline();
-  // Check if already scraping (e.g. page refresh during a run)
   const status = await fetch('/api/scrape/status').then(r => r.json()).catch(() => ({running:false}));
-  if (status.running) setScrapeRunning(true);
+  if (status.running) { setScrapeRunning(true); applyProgress(status); startPolling(); }
   await Promise.all([loadStats(), loadProperties()]);
 })();
 </script>
