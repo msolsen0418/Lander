@@ -563,6 +563,8 @@ async function loadStats() {
 }
 
 // ─── Scrape ────────────────────────────────────────────────────────────────
+let _pollTimer = null;
+
 function setScrapeRunning(running) {
   const btn = el('btn-scrape');
   btn.disabled = running;
@@ -578,44 +580,64 @@ function setScrapeRunning(running) {
   el('progress-banner').classList.toggle('visible', running);
 }
 
+function applyProgress(s) {
+  const pct = s.total > 0 ? Math.round(s.done / s.total * 100) : 0;
+  el('progress-fill').style.width = pct + '%';
+  el('progress-pct').textContent  = pct + '%';
+  el('progress-label').textContent =
+    s.phase === 'auctions'   ? `Auctions: ${s.current}` :
+    s.phase === 'valuations' ? `Valuations: ${s.current}` :
+    s.current || s.phase || 'Working…';
+}
+
+function startPolling() {
+  if (_pollTimer) clearInterval(_pollTimer);
+  _pollTimer = setInterval(async () => {
+    try {
+      const s = await fetch('/api/scrape/status').then(r => r.json());
+      applyProgress(s);
+      if (!s.running) {
+        clearInterval(_pollTimer);
+        _pollTimer = null;
+        setScrapeRunning(false);
+        if (s.phase === 'error') {
+          el('last-updated').textContent = '⚠ Scrape error — tap to retry';
+        } else {
+          const done = s.done || 0;
+          el('last-updated').textContent = `Updated ${new Date().toLocaleTimeString()} · ${done} listings`;
+          setTimeout(() => el('progress-banner').classList.remove('visible'), 2500);
+          loadStats();
+          loadProperties();
+        }
+      }
+    } catch { /* network blip — keep polling */ }
+  }, 3000);
+}
+
 el('btn-scrape').addEventListener('click', async () => {
-  const state = await (await fetch('/api/scrape/status')).json();
-  if (state.running) return;
+  try {
+    const state = await fetch('/api/scrape/status').then(r => r.json());
+    if (state.running) {
+      // Already running (e.g. page reload mid-scrape) — just attach polling
+      setScrapeRunning(true);
+      applyProgress(state);
+      startPolling();
+      return;
+    }
+  } catch { return; }
 
   try {
-    const r = await fetch('/api/scrape', { method: 'POST', headers: {'Content-Type':'application/json'}, body: '{}' });
-    if (r.status === 409) return; // already running
+    const r = await fetch('/api/scrape', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: '{}'
+    });
+    if (r.status === 409) { setScrapeRunning(true); startPolling(); return; }
     setScrapeRunning(true);
+    startPolling();
   } catch {
-    return;
+    el('last-updated').textContent = 'Could not reach server';
   }
-
-  const evtSource = new EventSource('/api/scrape/stream');
-  evtSource.onmessage = e => {
-    const s = JSON.parse(e.data);
-    const pct = s.total > 0 ? Math.round(s.done / s.total * 100) : 0;
-    el('progress-fill').style.width = pct + '%';
-    el('progress-pct').textContent  = pct + '%';
-    el('progress-label').textContent =
-      s.phase === 'auctions'   ? `Auctions: ${s.current}` :
-      s.phase === 'valuations' ? `Valuations: ${s.current}` :
-      s.current || s.phase;
-
-    if (!s.running) {
-      evtSource.close();
-      setScrapeRunning(false);
-      const done = s.done || 0;
-      el('last-updated').textContent = `Updated ${new Date().toLocaleTimeString()} · ${done} listings`;
-      setTimeout(() => el('progress-banner').classList.remove('visible'), 2500);
-      loadStats();
-      loadProperties();
-    }
-  };
-  evtSource.onerror = () => {
-    evtSource.close();
-    setScrapeRunning(false);
-    el('last-updated').textContent = 'Connection lost';
-  };
 });
 
 // ─── Sort buttons ──────────────────────────────────────────────────────────
@@ -698,7 +720,7 @@ if ('serviceWorker' in navigator) {
   updateOnline();
   // Check if already scraping (e.g. page refresh during a run)
   const status = await fetch('/api/scrape/status').then(r => r.json()).catch(() => ({running:false}));
-  if (status.running) setScrapeRunning(true);
+  if (status.running) { setScrapeRunning(true); applyProgress(status); startPolling(); }
   await Promise.all([loadStats(), loadProperties()]);
 })();
 </script>
