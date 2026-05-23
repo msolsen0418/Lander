@@ -1,4 +1,4 @@
-const CACHE = 'fl-arb-v1';
+const CACHE = 'fl-arb-v2';
 const SHELL = ['/', '/static/manifest.json', '/static/icon.svg'];
 
 self.addEventListener('install', e => {
@@ -35,12 +35,14 @@ self.addEventListener('fetch', e => {
   // SSE stream: always network, never cache
   if (url.pathname.includes('/stream')) return;
 
-  // Shell + static: cache-first
+  // Shell + static: network-first so updates are picked up immediately
   e.respondWith(
-    caches.match(e.request).then(r => r || fetch(e.request).then(nr => {
-      const clone = nr.clone();
-      caches.open(CACHE).then(c => c.put(e.request, clone));
-      return nr;
-    }))
+    fetch(e.request)
+      .then(r => {
+        const clone = r.clone();
+        caches.open(CACHE).then(c => c.put(e.request, clone));
+        return r;
+      })
+      .catch(() => caches.match(e.request))
   );
 });
