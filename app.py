@@ -6,9 +6,12 @@ import atexit
 import json
 import logging
 import os
+from datetime import timedelta
 
 from apscheduler.schedulers.background import BackgroundScheduler
-from flask import Flask, Response, jsonify, render_template, request, send_from_directory, stream_with_context
+from flask import (Flask, Response, jsonify, redirect, render_template,
+                   request, send_from_directory, session, stream_with_context,
+                   url_for)
 
 import database as db
 import scraper
@@ -16,25 +19,56 @@ import scraper
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
 
 app = Flask(__name__)
+app.secret_key = os.getenv("SECRET_KEY", os.urandom(32))
+app.permanent_session_lifetime = timedelta(days=30)
 
-# ── Optional Basic Auth ───────────────────────────────────────────────────────
 _AUTH_USER = os.getenv("APP_USERNAME", "")
 _AUTH_PASS = os.getenv("APP_PASSWORD", "")
+
+# Paths that never require auth
+_PUBLIC_PATHS = {"/health", "/login", "/sw.js"}
 
 
 @app.before_request
 def gate():
     db.init_db()
-    if request.path == "/health":
-        return  # Railway healthcheck bypasses auth
-    if _AUTH_USER and _AUTH_PASS:
-        auth = request.authorization
-        if not auth or auth.username != _AUTH_USER or auth.password != _AUTH_PASS:
-            return Response(
-                "Login required",
-                401,
-                {"WWW-Authenticate": 'Basic realm="FL Arbitrage"'},
-            )
+
+    # Always allow public paths and static assets
+    if request.path in _PUBLIC_PATHS or request.path.startswith("/static/"):
+        return
+
+    # No auth configured — open access
+    if not (_AUTH_USER and _AUTH_PASS):
+        return
+
+    # Session cookie present and valid
+    if session.get("authenticated"):
+        return
+
+    # API calls get 401 JSON; page requests get the login form
+    if request.path.startswith("/api/"):
+        return jsonify({"error": "unauthorized"}), 401
+    return redirect(url_for("login"))
+
+
+# ── Auth routes ───────────────────────────────────────────────────────────────
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        if (request.form.get("username") == _AUTH_USER and
+                request.form.get("password") == _AUTH_PASS):
+            session["authenticated"] = True
+            session.permanent = True
+            return redirect(url_for("dashboard"))
+        return render_template("login.html", error="Incorrect username or password")
+    return render_template("login.html", error=None)
+
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect(url_for("login"))
 
 
 # ── Pages ─────────────────────────────────────────────────────────────────────
