@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#1e293b" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>FL Arbitrage — Login</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100dvh;
+      background: #0f172a;
+      color: #e2e8f0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      display: flex; align-items: center; justify-content: center;
+      padding: 1.5rem;
+      padding-top: calc(1.5rem + env(safe-area-inset-top, 0px));
+    }
+    .card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 18px;
+      padding: 2.25rem 2rem;
+      width: 100%; max-width: 360px;
+      display: flex; flex-direction: column; align-items: center; gap: 1.5rem;
+    }
+    .logo { font-size: 3rem; line-height: 1; }
+    .title { font-size: 1.3rem; font-weight: 700; text-align: center; }
+    .subtitle { font-size: 0.82rem; color: #94a3b8; text-align: center; margin-top: -1rem; }
+    form { width: 100%; display: flex; flex-direction: column; gap: 0.75rem; }
+    label { font-size: 0.78rem; color: #94a3b8; text-transform: uppercase; letter-spacing: .04em; }
+    input {
+      width: 100%;
+      background: #0f172a; border: 1px solid #334155; border-radius: 10px;
+      color: #e2e8f0; font-size: 1rem; padding: 0.75rem 1rem;
+      outline: none; -webkit-appearance: none;
+      margin-top: 4px;
+    }
+    input:focus { border-color: #3b82f6; }
+    input::placeholder { color: #475569; }
+    .error {
+      background: #7f1d1d33; border: 1px solid #ef444455;
+      border-radius: 8px; color: #fca5a5;
+      font-size: 0.82rem; padding: 0.6rem 0.9rem; text-align: center;
+    }
+    button {
+      width: 100%; background: #2563eb; border: none; border-radius: 10px;
+      color: #fff; font-size: 1rem; font-weight: 600;
+      padding: 0.85rem; cursor: pointer; margin-top: 0.25rem;
+      -webkit-tap-highlight-color: transparent;
+    }
+    button:active { background: #1d4ed8; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">🏠</div>
+    <div class="title">FL Arbitrage</div>
+    <div class="subtitle">Florida Property Opportunity Scanner</div>
+    {% if error %}
+    <div class="error">{{ error }}</div>
+    {% endif %}
+    <form method="POST" action="/login">
+      <div>
+        <label for="username">Username</label>
+        <input id="username" name="username" type="text"
+          placeholder="Enter username" autocomplete="username"
+          autocapitalize="none" required />
+      </div>
+      <div>
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password"
+          placeholder="Enter password" autocomplete="current-password" required />
+      </div>
+      <button type="submit">Sign In</button>
+    </form>
+  </div>
+</body>
+</html>
