@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Florida Property Arbitrage Dashboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap5.min.css" rel="stylesheet" />
+  <style>
+    :root {
+      --green: #22c55e;
+      --red: #ef4444;
+      --yellow: #eab308;
+      --bg: #0f172a;
+      --surface: #1e293b;
+      --border: #334155;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+    }
+    body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; }
+    .navbar { background: var(--surface) !important; border-bottom: 1px solid var(--border); }
+    .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem 1.5rem; }
+    .stat-card .label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+    .stat-card .value { font-size: 1.75rem; font-weight: 700; line-height: 1.1; }
+    .table-wrapper { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+    table.dataTable thead th { background: var(--surface); color: var(--muted); border-bottom: 1px solid var(--border); white-space: nowrap; font-size: 0.78rem; text-transform: uppercase; letter-spacing: .04em; }
+    table.dataTable tbody tr { background: var(--surface); border-bottom: 1px solid var(--border); }
+    table.dataTable tbody tr:hover td { background: #243249 !important; }
+    table.dataTable tbody td { color: var(--text); vertical-align: middle; font-size: 0.88rem; padding: 0.6rem 0.75rem; }
+    .equity-pos { color: var(--green); font-weight: 600; }
+    .equity-neg { color: var(--red); }
+    .equity-zero { color: var(--muted); }
+    .badge-tax { background: #7c3aed22; color: #a78bfa; border: 1px solid #7c3aed44; }
+    .badge-fore { background: #b4530022; color: #fb923c; border: 1px solid #b4530044; }
+    .badge-surp { background: #0f766e22; color: #2dd4bf; border: 1px solid #0f766e44; }
+    .source-pill { display: inline-flex; align-items: center; gap: 4px; font-size: 0.72rem;
+                   padding: 2px 7px; border-radius: 20px; text-decoration: none; }
+    .pill-county { background: #1d4ed822; color: #93c5fd; border: 1px solid #1d4ed844; }
+    .pill-zillow { background: #15803d22; color: #86efac; border: 1px solid #15803d44; }
+    .pill-redfin { background: #9f121222; color: #fca5a5; border: 1px solid #9f121244; }
+    .filter-bar { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1rem 1.25rem; }
+    .form-select, .form-control, .input-group-text {
+      background: var(--bg); border-color: var(--border); color: var(--text); }
+    .form-select:focus, .form-control:focus { background: var(--bg); border-color: #60a5fa; color: var(--text); box-shadow: none; }
+    .btn-scrape { background: #2563eb; border: none; font-weight: 600; padding: .45rem 1.25rem; }
+    .btn-scrape:hover { background: #1d4ed8; }
+    .btn-scrape:disabled { background: #374151; color: #6b7280; }
+    #progress-bar-wrap { display: none; }
+    .progress { background: var(--border); border-radius: 8px; height: 8px; }
+    .progress-bar { background: var(--green); transition: width .3s; }
+    .dataTables_filter input { background: var(--bg) !important; border-color: var(--border) !important; color: var(--text) !important; border-radius: 6px; }
+    .dataTables_length select { background: var(--bg) !important; border-color: var(--border) !important; color: var(--text) !important; }
+    .dataTables_info, .dataTables_filter label, .dataTables_length label { color: var(--muted); }
+    .page-item .page-link { background: var(--surface); border-color: var(--border); color: var(--text); }
+    .page-item.active .page-link { background: #2563eb; border-color: #2563eb; }
+    .address-cell { max-width: 220px; }
+    .address-cell .street { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .address-cell .sub { font-size: 0.75rem; color: var(--muted); }
+    .no-data { text-align: center; padding: 3rem; color: var(--muted); }
+    .spinner-border-sm { width: 1rem; height: 1rem; }
+    .alert-info-dark { background: #0c2a4a; border: 1px solid #1e4976; color: #93c5fd; border-radius: 8px; }
+  </style>
+</head>
+<body>
+
+<nav class="navbar navbar-dark px-4 py-3">
+  <span class="navbar-brand fw-bold fs-5">🏠 FL Property Arbitrage</span>
+  <span class="text-muted small" id="last-updated"></span>
+</nav>
+
+<div class="container-fluid px-4 py-4">
+
+  <!-- Stats row -->
+  <div class="row g-3 mb-4" id="stats-row">
+    <div class="col-6 col-md-3">
+      <div class="stat-card">
+        <div class="label">Total Listings</div>
+        <div class="value" id="stat-total">—</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card">
+        <div class="label">Positive Equity</div>
+        <div class="value equity-pos" id="stat-positive">—</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card">
+        <div class="label">Avg Equity Gap</div>
+        <div class="value" id="stat-avg-gap">—</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card">
+        <div class="label">Best Opportunity</div>
+        <div class="value equity-pos" id="stat-best">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filter & Scrape bar -->
+  <div class="filter-bar mb-4 d-flex flex-wrap align-items-center gap-3">
+    <div class="d-flex align-items-center gap-2">
+      <button class="btn btn-scrape btn-sm text-white" id="btn-scrape">
+        <span id="scrape-label">Run Scrape</span>
+        <span id="scrape-spinner" class="spinner-border spinner-border-sm ms-1 d-none" role="status"></span>
+      </button>
+      <span class="text-muted small" id="scrape-status-text"></span>
+    </div>
+
+    <div id="progress-bar-wrap" class="flex-grow-1" style="min-width:160px">
+      <div class="d-flex justify-content-between mb-1">
+        <span class="small text-muted" id="progress-label">Scraping...</span>
+        <span class="small text-muted" id="progress-pct">0%</span>
+      </div>
+      <div class="progress"><div class="progress-bar" id="progress-bar" style="width:0%"></div></div>
+    </div>
+
+    <div class="ms-auto d-flex flex-wrap gap-2">
+      <select class="form-select form-select-sm" id="filter-county" style="min-width:160px">
+        <option value="">All Counties</option>
+      </select>
+      <select class="form-select form-select-sm" id="filter-type" style="min-width:150px">
+        <option value="">All Types</option>
+        <option value="tax_deed">Tax Deed</option>
+        <option value="foreclosure">Foreclosure</option>
+        <option value="surplus">Gov Surplus</option>
+      </select>
+      <div class="input-group input-group-sm" style="max-width:160px">
+        <span class="input-group-text">Min Equity %</span>
+        <input type="number" class="form-control" id="filter-min-equity" placeholder="e.g. 10" />
+      </div>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="table-wrapper">
+    <table id="props-table" class="table table-hover mb-0 dataTable" style="width:100%">
+      <thead>
+        <tr>
+          <th>Property</th>
+          <th>County</th>
+          <th>Type</th>
+          <th>Sale Date</th>
+          <th>Opening Bid</th>
+          <th>County Value</th>
+          <th>Zillow Est.</th>
+          <th>Redfin Est.</th>
+          <th>Best Estimate</th>
+          <th>Equity Gap $</th>
+          <th>Equity Gap %</th>
+          <th>Links</th>
+        </tr>
+      </thead>
+      <tbody id="table-body">
+        <tr><td colspan="12" class="no-data">Click <strong>Run Scrape</strong> to fetch listings, or load cached data below.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
+<script>
+  let dt;
+
+  const fmt$ = v => v == null ? '—' : '$' + Number(v).toLocaleString('en-US', {maximumFractionDigits:0});
+  const fmtPct = v => v == null ? '—' : (v > 0 ? '+' : '') + v.toFixed(1) + '%';
+  const fmtDate = s => s ? s.replace(/(\d{4})-(\d{2})-(\d{2})/, '$2/$3/$1') : '—';
+
+  const auctionTypeBadge = t => {
+    if (t === 'tax_deed') return '<span class="badge badge-tax rounded-pill">Tax Deed</span>';
+    if (t === 'foreclosure') return '<span class="badge badge-fore rounded-pill">Foreclosure</span>';
+    return '<span class="badge badge-surp rounded-pill">Surplus</span>';
+  };
+
+  const equityClass = pct => pct == null ? 'equity-zero' : pct > 0 ? 'equity-pos' : 'equity-neg';
+
+  function buildValCell(val, url, pillClass, label) {
+    if (val == null) return '<span class="text-muted">—</span>';
+    const formatted = fmt$(val);
+    if (url) {
+      return `<a href="${url}" target="_blank" class="source-pill ${pillClass}">${label} ${formatted}</a>`;
+    }
+    return `<span class="${pillClass} source-pill">${label} ${formatted}</span>`;
+  }
+
+  function renderRow(p) {
+    const vals = p.valuations || {};
+    const county_val  = vals.county  ? buildValCell(vals.county.value,  vals.county.url,  'pill-county', '') : '<span class="text-muted">—</span>';
+    const zillow_val  = vals.zillow  ? buildValCell(vals.zillow.value,  vals.zillow.url,  'pill-zillow', '') : '<span class="text-muted">—</span>';
+    const redfin_val  = vals.redfin  ? buildValCell(vals.redfin.value,  vals.redfin.url,  'pill-redfin', '') : '<span class="text-muted">—</span>';
+    const eClass = equityClass(p.equity_gap_pct);
+
+    return [
+      `<div class="address-cell"><div class="street" title="${p.address || ''}">${p.address || '—'}</div><div class="sub">${p.city || ''}${p.zip ? ' ' + p.zip : ''}</div></div>`,
+      p.county || '—',
+      auctionTypeBadge(p.auction_type),
+      fmtDate(p.sale_date),
+      `<strong>${fmt$(p.opening_bid)}</strong>`,
+      county_val,
+      zillow_val,
+      redfin_val,
+      p.best_estimate ? `<strong>${fmt$(p.best_estimate)}</strong>` : '—',
+      `<span class="${eClass}">${fmt$(p.equity_gap)}</span>`,
+      `<span class="${eClass} fw-bold">${fmtPct(p.equity_gap_pct)}</span>`,
+      p.source_url ? `<a href="${p.source_url}" target="_blank" class="source-pill pill-county">Listing ↗</a>` : '—',
+    ];
+  }
+
+  function initTable(data) {
+    if (dt) { dt.destroy(); }
+    const rows = data.map(renderRow);
+    dt = $('#props-table').DataTable({
+      data: rows,
+      columns: Array.from({length: 12}, (_, i) => ({
+        render: (d) => d,
+        orderable: true,
+        ...(i === 10 ? {
+          // Sort equity gap % numerically
+          type: 'num',
+          render: (d, type) => {
+            if (type !== 'sort') return d;
+            const m = d.match(/([-+]?\d+\.?\d*)/);
+            return m ? parseFloat(m[1]) : -9999;
+          }
+        } : {}),
+        ...(i === 4 || i === 8 || i === 9 ? {
+          render: (d, type) => {
+            if (type !== 'sort') return d;
+            const m = d.match(/\$([\d,]+)/);
+            return m ? parseFloat(m[1].replace(/,/g,'')) : -1;
+          }
+        } : {}),
+      })),
+      order: [[10, 'desc']], // Sort by equity gap % desc by default
+      pageLength: 25,
+      lengthMenu: [10, 25, 50, 100],
+      language: {
+        emptyTable: '<span class="text-muted">No listings match your filters.</span>',
+        info: 'Showing _START_ to _END_ of _TOTAL_ listings',
+        infoEmpty: 'No listings',
+      },
+      dom: '<"d-flex justify-content-between align-items-center p-3"lf>rt<"d-flex justify-content-between align-items-center p-3"ip>',
+    });
+  }
+
+  async function loadProperties() {
+    const county = document.getElementById('filter-county').value;
+    const type = document.getElementById('filter-type').value;
+    const minEq = document.getElementById('filter-min-equity').value;
+    const params = new URLSearchParams();
+    if (county) params.set('county', county);
+    if (type) params.set('type', type);
+    if (minEq) params.set('min_equity_pct', minEq);
+
+    const resp = await fetch('/api/properties?' + params);
+    const data = await resp.json();
+    initTable(data);
+  }
+
+  async function loadStats() {
+    const resp = await fetch('/api/stats');
+    const s = await resp.json();
+    document.getElementById('stat-total').textContent = s.total_properties.toLocaleString();
+    document.getElementById('stat-positive').textContent = s.positive_equity_count.toLocaleString();
+    document.getElementById('stat-avg-gap').textContent = s.avg_equity_gap_pct > 0 ? '+' + s.avg_equity_gap_pct + '%' : '—';
+    document.getElementById('stat-best').textContent = s.best_equity_gap_pct > 0 ? '+' + s.best_equity_gap_pct + '%' : '—';
+
+    // Populate county filter
+    const sel = document.getElementById('filter-county');
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">All Counties</option>';
+    (s.counties || []).forEach(c => {
+      const o = document.createElement('option');
+      o.value = c; o.textContent = c;
+      if (c === cur) o.selected = true;
+      sel.appendChild(o);
+    });
+  }
+
+  // Scrape button + SSE progress
+  document.getElementById('btn-scrape').addEventListener('click', async () => {
+    const btn = document.getElementById('btn-scrape');
+    btn.disabled = true;
+    document.getElementById('scrape-spinner').classList.remove('d-none');
+    document.getElementById('scrape-label').textContent = 'Running...';
+    document.getElementById('progress-bar-wrap').style.display = 'block';
+    document.getElementById('scrape-status-text').textContent = '';
+
+    await fetch('/api/scrape', { method: 'POST', headers: {'Content-Type':'application/json'}, body: '{}' });
+
+    const evtSource = new EventSource('/api/scrape/stream');
+    evtSource.onmessage = (e) => {
+      const state = JSON.parse(e.data);
+      const pct = state.total > 0 ? Math.round(state.done / state.total * 100) : 0;
+      document.getElementById('progress-bar').style.width = pct + '%';
+      document.getElementById('progress-pct').textContent = pct + '%';
+      document.getElementById('progress-label').textContent =
+        state.phase === 'auctions' ? `Scraping auctions: ${state.current}` :
+        state.phase === 'valuations' ? `Fetching valuations: ${state.current}` :
+        state.current || state.phase;
+
+      if (!state.running) {
+        evtSource.close();
+        btn.disabled = false;
+        document.getElementById('scrape-spinner').classList.add('d-none');
+        document.getElementById('scrape-label').textContent = 'Run Scrape';
+        document.getElementById('scrape-status-text').textContent =
+          state.phase === 'error' ? '⚠ ' + state.current : `✓ Done · ${state.done} listings`;
+        setTimeout(() => {
+          document.getElementById('progress-bar-wrap').style.display = 'none';
+        }, 3000);
+        loadProperties();
+        loadStats();
+        document.getElementById('last-updated').textContent = 'Updated ' + new Date().toLocaleTimeString();
+      }
+    };
+
+    evtSource.onerror = () => {
+      evtSource.close();
+      btn.disabled = false;
+      document.getElementById('scrape-spinner').classList.add('d-none');
+      document.getElementById('scrape-label').textContent = 'Run Scrape';
+      document.getElementById('scrape-status-text').textContent = '⚠ Connection lost';
+    };
+  });
+
+  // Filters trigger reload
+  ['filter-county', 'filter-type'].forEach(id => {
+    document.getElementById(id).addEventListener('change', loadProperties);
+  });
+  document.getElementById('filter-min-equity').addEventListener('input', () => {
+    clearTimeout(window._eqTimer);
+    window._eqTimer = setTimeout(loadProperties, 400);
+  });
+
+  // Check if scrape is already running on page load
+  async function checkRunning() {
+    const resp = await fetch('/api/scrape/status');
+    const state = await resp.json();
+    if (state.running) {
+      document.getElementById('btn-scrape').disabled = true;
+      document.getElementById('scrape-label').textContent = 'Running...';
+      document.getElementById('scrape-spinner').classList.remove('d-none');
+    }
+    if (state.last_completed) {
+      document.getElementById('last-updated').textContent =
+        'Last updated ' + new Date(state.last_completed * 1000).toLocaleString();
+    }
+  }
+
+  // Init
+  checkRunning();
+  loadStats();
+  loadProperties();
+</script>
+</body>
+</html>
