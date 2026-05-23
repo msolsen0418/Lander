@@ -22,10 +22,19 @@ _AUTH_USER = os.getenv("APP_USERNAME", "")
 _AUTH_PASS = os.getenv("APP_PASSWORD", "")
 
 
+@app.route("/health")
+def health():
+    return "ok", 200
+
+
 @app.before_request
 def gate():
     db.init_db()
+    if request.path == "/health":
+        return  # Railway healthcheck bypasses auth
     if _AUTH_USER and _AUTH_PASS:
+        if request.endpoint == "health":
+            return
         auth = request.authorization
         if not auth or auth.username != _AUTH_USER or auth.password != _AUTH_PASS:
             return Response(
@@ -40,6 +49,11 @@ def gate():
 @app.route("/")
 def dashboard():
     return render_template("index.html")
+
+
+@app.route("/health")
+def health():
+    return {"status": "ok"}, 200
 
 
 @app.route("/sw.js")
