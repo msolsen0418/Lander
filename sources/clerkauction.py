@@ -17,7 +17,7 @@ import logging
 from datetime import datetime
 from urllib.parse import urljoin
 from bs4 import BeautifulSoup
-from .session import make_session
+from .session import make_direct_session
 
 logger = logging.getLogger(__name__)
 
@@ -37,9 +37,9 @@ _CALENDAR_PATHS = {
 
 def scrape(progress_cb=None) -> list[dict]:
     """Scrape upcoming auction listings from ClerkAuction counties."""
-    session = make_session()
-    all_listings = []
-    seen = set()
+    session = make_direct_session()
+    all_listings: list[dict] = []
+    seen: set[str] = set()
 
     for i, (county_name, base_url, auction_type) in enumerate(_COUNTIES):
         if progress_cb:
@@ -71,15 +71,11 @@ def _scrape_calendar(session, base_url: str, path: str, county_name: str, auctio
 def _parse_calendar(soup: BeautifulSoup, base_url: str, county_name: str, auction_type: str) -> list[dict]:
     listings = []
 
-    # ClerkAuction groups sales by date — each date block has a header and a list of cases
-    # Try several container patterns the platform uses
     date_blocks = soup.select("div.auction-date-group, div.sales-date, section.auction-group")
     if not date_blocks:
-        # Fallback: look for any table with case/address columns
         date_blocks = [soup]
 
     for block in date_blocks:
-        # Extract the sale date from a heading within the block
         date_raw = ""
         for hdr in block.select("h2, h3, h4, .date-header, .auction-date"):
             t = hdr.get_text(strip=True)
@@ -87,12 +83,11 @@ def _parse_calendar(soup: BeautifulSoup, base_url: str, county_name: str, auctio
                 date_raw = t
                 break
 
-        # Each case row — try table rows first, then list items / divs
         rows = block.select("tr") or block.select("li.auction-item, div.auction-item, div.case-row")
         for row in rows:
             cells = row.find_all(["td", "th"])
             if not cells:
-                cells = [row]  # treat the whole element as one cell
+                cells = [row]
             if len(cells) < 2:
                 continue
 
@@ -107,7 +102,6 @@ def _parse_calendar(soup: BeautifulSoup, base_url: str, county_name: str, auctio
             bid_raw = _extract_bid(text_vals)
             sale_date = _parse_date(date_raw) or _parse_date(_extract_date_from_text(full_text))
 
-            # Detail URL
             detail_url = None
             for cell in cells:
                 a = cell.find("a", href=True)
