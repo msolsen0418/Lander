@@ -17,14 +17,11 @@ from .session import make_direct_session
 
 logger = logging.getLogger(__name__)
 
-# (county_name, subdomain, auction_type)
-# These two counties were the original ClerkAuction targets.
-_COUNTIES = [
-    ("Palm Beach", "palmbeach", "foreclosure"),
-    ("Palm Beach", "palmbeach", "tax_deed"),
-    ("St. Lucie",  "stlucie",  "foreclosure"),
-    ("St. Lucie",  "stlucie",  "tax_deed"),
-]
+# Palm Beach and St. Lucie have moved to palmbeach.realforeclose.com and
+# stlucie.realforeclose.com — already covered by realforeclose_pw.py.
+# ClerkAuction DNS subdomains no longer resolve. List is empty to prevent
+# duplicate entries; kept for adding future counties if they join the platform.
+_COUNTIES: list = []
 
 # How many upcoming auction dates to scrape per county/type
 _MAX_DATES = 4
@@ -54,7 +51,7 @@ def scrape(progress_cb=None) -> list[dict]:
     return all_listings
 
 
-# ── per-county scraping ─────────────────────────────────────────────
+# ── per-county scraping ───────────────────────────────────────────────────────
 
 def _scrape_county(session, subdomain: str, county_name: str, auction_type: str) -> list[dict]:
     """Collect upcoming auction listings for one county/type via AJAX."""
@@ -203,7 +200,7 @@ def _parse_auction_item(item, base_url: str, county_name: str, auction_type: str
     }
 
 
-# ── helpers ────────────────────────────────────────────────
+# ── helpers ───────────────────────────────────────────────────────────────────
 
 def _parse_city_zip(raw: str) -> tuple[str, str]:
     """Parse 'CITY, FL- 33414' or 'CITY FL 33414' into (city, zip)."""
