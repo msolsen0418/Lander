@@ -109,15 +109,13 @@ def run_full_scrape(max_counties: int = None):
                     logger.warning("Failed to save listing %s: %s", listing.get("address"), e)
 
         # ── Phase 2: Valuations ────────────────────────────────────────────
+        # County appraiser (ArcGIS) always runs — government APIs, no proxy needed.
+        # Zillow/Redfin only run when a residential proxy is configured.
         if not has_residential_proxy():
             logger.info(
-                "Skipping valuations — no residential proxy configured. "
-                "Set SMARTPROXY_USER + SMARTPROXY_PASS in Railway env vars to enable."
+                "No residential proxy — county assessed values only. "
+                "Set SMARTPROXY_USER + SMARTPROXY_PASS to also fetch Zillow/Redfin estimates."
             )
-            _set_state(phase="idle", running=False, current="", done=len(property_ids),
-                       total=len(property_ids), last_completed=time.time())
-            logger.info("Scrape complete (listings only — no valuations).")
-            return
 
 
         logger.info("Phase 2: Fetching valuations for %d properties", len(property_ids))
@@ -157,9 +155,10 @@ def _enrich_property(property_id: int, listing: dict):
 
     tasks = {
         "county": lambda: county_appraiser.get_assessed_value(address, city, county, zip_code),
-        "zillow": lambda: zillow.get_zestimate(address, city, state, zip_code),
-        "redfin": lambda: redfin.get_estimate(address, city, state, zip_code),
     }
+    if has_residential_proxy():
+        tasks["zillow"] = lambda: zillow.get_zestimate(address, city, state, zip_code)
+        tasks["redfin"] = lambda: redfin.get_estimate(address, city, state, zip_code)
 
     with ThreadPoolExecutor(max_workers=3) as executor:
         futures = {executor.submit(fn): source for source, fn in tasks.items()}
