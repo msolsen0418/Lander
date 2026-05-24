@@ -97,6 +97,7 @@ class _ScraperAPISession(requests.Session):
 
 
 def make_session() -> requests.Session:
+    """Session for realforeclose.com — routes through ScraperAPI when key is set."""
     profile = random.choice(_PROFILES)
 
     if _SCRAPERAPI_KEY:
@@ -105,6 +106,36 @@ def make_session() -> requests.Session:
         session = requests.Session()
         session.mount("https://", _NoSSLAdapter())
 
+    session.headers.update(
+        {
+            "User-Agent": profile["User-Agent"],
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Accept-Encoding": "gzip, deflate, br",
+            "sec-ch-ua": profile["sec-ch-ua"],
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": profile["sec-ch-ua-platform"],
+            "Sec-Fetch-Dest": "document",
+            "Sec-Fetch-Mode": "navigate",
+            "Sec-Fetch-Site": "none",
+            "Sec-Fetch-User": "?1",
+            "Upgrade-Insecure-Requests": "1",
+            "Cache-Control": "max-age=0",
+            "Connection": "keep-alive",
+        }
+    )
+    return session
+
+
+def make_direct_session() -> requests.Session:
+    """Direct requests session — never routes through ScraperAPI.
+
+    Use this for sites that are accessible from Railway IPs without a proxy
+    (government/court sites, SSR aggregators, etc.).
+    """
+    profile = random.choice(_PROFILES)
+    session = requests.Session()
+    session.mount("https://", _NoSSLAdapter())
     session.headers.update(
         {
             "User-Agent": profile["User-Agent"],

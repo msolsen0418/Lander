@@ -14,7 +14,7 @@ import logging
 from datetime import datetime
 from urllib.parse import urljoin, quote_plus
 from bs4 import BeautifulSoup
-from .session import make_session
+from .session import make_direct_session
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +38,7 @@ _FORECLOSURE_KEYWORDS = [
 
 def scrape(progress_cb=None) -> list[dict]:
     """Scrape foreclosure / tax-deed notices from floridapublicnotices.com."""
-    session = make_session()
+    session = make_direct_session()
     all_listings = []
     seen_urls: set[str] = set()
 

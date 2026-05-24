@@ -60,6 +60,7 @@ def scrape(max_counties: int = None, progress_cb=None) -> list[dict]:
             viewport={"width": 1920, "height": 1080},
             locale="en-US",
             timezone_id="America/New_York",
+            ignore_https_errors=True,
         )
         page = ctx.new_page()
         page.set_default_timeout(30_000)

@@ -17,7 +17,7 @@ import logging
 from datetime import datetime
 from urllib.parse import urljoin
 from bs4 import BeautifulSoup
-from .session import make_session
+from .session import make_direct_session
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +37,7 @@ _CALENDAR_PATHS = {
 
 def scrape(progress_cb=None) -> list[dict]:
     """Scrape upcoming auction listings from ClerkAuction counties."""
-    session = make_session()
+    session = make_direct_session()
     all_listings = []
     seen = set()
 
