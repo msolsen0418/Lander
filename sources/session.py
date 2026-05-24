@@ -213,3 +213,12 @@ def make_direct_session() -> requests.Session:
                       "sec-ch-ua": profile["sec-ch-ua"],
                       "sec-ch-ua-platform": profile["sec-ch-ua-platform"]})
     return s
+
+
+def has_residential_proxy() -> bool:
+    """Return True only when a real residential proxy is configured.
+
+    ScraperAPI is excluded — it returns 500 for Zillow/Redfin ("protected
+    domains") and 429 under concurrent load, causing container crash-loops.
+    """
+    return _HAS_SMARTPROXY or bool(_HTTP_PROXY)
