@@ -18,7 +18,6 @@ from sources.session import make_direct_session, make_proxy_session
 logger = logging.getLogger(__name__)
 
 _ATTOM_KEY = os.getenv("ATTOM_API_KEY", "")
-_HAS_PROXY = bool(os.getenv("HTTP_PROXY", "") or os.getenv("HTTPS_PROXY", ""))
 
 # ArcGIS Feature/Map Service parcel endpoints for FL counties.
 # These work when routed through a residential proxy (HTTP_PROXY env var).
@@ -62,13 +61,10 @@ def get_assessed_value(address: str, city: str, county: str, zip_code: str = "")
     try:
         if _ATTOM_KEY:
             return _attom_lookup(address, city, county, zip_code)
-        if _HAS_PROXY and county in _ARCGIS:
+        if county in _ARCGIS:
+            # ArcGIS parcel APIs are public government data; no proxy needed.
             return _arcgis_lookup(county, address)
-        if not _ATTOM_KEY and not _HAS_PROXY:
-            logger.debug(
-                "County appraiser skipped for %s — set ATTOM_API_KEY or HTTP_PROXY in Railway env vars",
-                address,
-            )
+        logger.debug("County appraiser skipped for %s — county '%s' not in ArcGIS map; set ATTOM_API_KEY for full coverage", address, county)
     except Exception as exc:
         logger.debug("County appraiser lookup failed (%s %s): %s", county, address, exc)
 
@@ -107,22 +103,29 @@ def _attom_lookup(address: str, city: str, county: str, zip_code: str) -> dict:
 
 
 def _arcgis_lookup(county: str, address: str) -> dict:
-    """Query county ArcGIS parcel service via residential proxy."""
+    """Query county ArcGIS parcel service. Tries direct first; falls back to proxy."""
     base, addr_field = _ARCGIS[county]
-    session = make_proxy_session()
     addr_upper = address.upper().strip()
     where = f"UPPER({addr_field}) LIKE '{addr_upper}%'"
     params = urlencode({"where": where, "outFields": "*", "returnGeometry": "false",
                         "resultRecordCount": 3, "f": "json"})
-    resp = session.get(f"{base}/query?{params}", timeout=20)
-    resp.raise_for_status()
-    data = resp.json()
-    features = data.get("features", [])
-    if not features:
-        return {"estimated_value": None, "detail_url": None, "raw": {}}
-    attrs = features[0].get("attributes", {})
-    value = _extract_value(attrs)
-    return {"estimated_value": value, "detail_url": base if value else None, "raw": attrs}
+    query_url = f"{base}/query?{params}"
+
+    for session in (make_direct_session(), make_proxy_session()):
+        try:
+            resp = session.get(query_url, timeout=20)
+            resp.raise_for_status()
+            data = resp.json()
+            features = data.get("features", [])
+            if not features:
+                return {"estimated_value": None, "detail_url": None, "raw": {}}
+            attrs = features[0].get("attributes", {})
+            value = _extract_value(attrs)
+            return {"estimated_value": value, "detail_url": base if value else None, "raw": attrs}
+        except Exception as exc:
+            logger.debug("ArcGIS direct attempt failed for %s: %s", county, exc)
+
+    return {"estimated_value": None, "detail_url": None, "raw": {}}
 
 
 def _extract_value(attrs: dict) -> float | None:
