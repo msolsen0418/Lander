@@ -1,0 +1,1233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claude Code Cheat Sheet</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0d1117;--surface:#161b22;--surface2:#21262d;--border:#30363d;--accent:#58a6ff;--accent2:#79c0ff;--text:#e6edf3;--text2:#8b949e;--text3:#6e7681;--green:#56d364;--yellow:#e3b341;--red:#f85149;--purple:#bc8cff;--orange:#ffa657}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;font-size:14px;line-height:1.5;min-height:100vh}
+code,kbd,pre{font-family:'SF Mono','Fira Code','Cascadia Code',Consolas,monospace}
+#header{position:sticky;top:0;z-index:100;background:var(--surface);border-bottom:1px solid var(--border);padding:0 16px}
+.header-inner{max-width:1400px;margin:0 auto;display:flex;align-items:center;gap:12px;height:52px}
+.logo{font-weight:700;font-size:15px;white-space:nowrap;flex-shrink:0}.logo span{color:var(--accent)}
+#search-wrap{flex:1;max-width:360px;position:relative}
+#search{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px 6px 30px;font-size:13px;outline:none;transition:border-color .15s}
+#search:focus{border-color:var(--accent)}
+#search::placeholder{color:var(--text3)}
+.si{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--text3);pointer-events:none;font-size:12px}
+#sc{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;display:none;padding:0}
+#sc.v{display:block}
+.tabs{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;flex-shrink:0}.tabs::-webkit-scrollbar{display:none}
+.tab{background:none;border:none;border-bottom:2px solid transparent;color:var(--text2);cursor:pointer;font-size:13px;padding:14px 12px 12px;white-space:nowrap;transition:color .15s,border-color .15s}
+.tab:hover{color:var(--text)}.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+main{max-width:1400px;margin:0 auto;padding:20px 16px 60px}
+.panel{display:none}.panel.active{display:block}
+h2{font-size:18px;font-weight:600;margin-bottom:16px;border-bottom:1px solid var(--border);padding-bottom:8px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+@media(max-width:900px){.g2,.g3{grid-template-columns:1fr}}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px}
+.ct{width:100%;border-collapse:collapse}.ct tr{border-bottom:1px solid var(--border)}.ct tr:last-child{border-bottom:none}
+.ct td{padding:7px 8px;vertical-align:middle}.ct td:first-child{width:52%}
+.cc{display:flex;align-items:center;gap:6px}
+.cm{background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:2px 7px;font-size:12px;color:var(--accent2);white-space:nowrap}
+.cd{color:var(--text2);font-size:12px}
+.cb{background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text3);cursor:pointer;font-size:10px;padding:2px 6px;flex-shrink:0;transition:all .15s;white-space:nowrap}
+.cb:hover{color:var(--text);border-color:var(--text3)}.cb.ok{color:var(--green);border-color:var(--green)}
+.cl{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:6px;padding:12px 14px;margin-bottom:12px}
+.cl.y{border-left-color:var(--yellow)}.cl.g{border-left-color:var(--green)}.cl.r{border-left-color:var(--red)}.cl.p{border-left-color:var(--purple)}
+.ct2{font-weight:600;font-size:12px;margin-bottom:4px}
+.cl p{font-size:13px;color:var(--text2)}
+.ss{background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-bottom:8px;overflow:hidden}
+.sh{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;cursor:pointer;user-select:none;transition:background .15s}
+.sh:hover{background:var(--surface2)}
+.st{font-weight:600;font-size:13px;display:flex;align-items:center;gap:8px}
+.sc2{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:1px 7px;font-size:11px;color:var(--text3);font-weight:400}
+.sv{color:var(--text3);transition:transform .2s;font-size:11px}.ss.col .sv{transform:rotate(-90deg)}
+.sb{padding:0 6px 6px}.ss.col .sb{display:none}
+.sr{display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:4px;transition:background .1s}
+.sr:hover{background:var(--surface2)}
+.sn{font-family:'SF Mono','Fira Code',Consolas,monospace;font-size:12px;color:var(--accent2);flex-shrink:0;min-width:210px}
+.sd{font-size:12px;color:var(--text2);flex:1}
+.sr .cb{margin-left:auto}
+.sh2{display:none!important}
+kbd{background:var(--surface2);border:1px solid var(--border);border-bottom-width:2px;border-radius:4px;padding:1px 6px;font-size:11px}
+.mt{width:100%;border-collapse:collapse;font-size:12px}
+.mt th{background:var(--surface2);color:var(--text2);font-size:10px;text-transform:uppercase;letter-spacing:.05em;padding:6px 8px;text-align:left;border-bottom:1px solid var(--border)}
+.mt td{padding:6px 8px;border-bottom:1px solid var(--border);vertical-align:top}.mt tr:last-child td{border-bottom:none}.mt tr:hover td{background:var(--surface2)}
+#cfs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.fb{background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text2);cursor:pointer;font-size:12px;padding:4px 10px;transition:all .15s}
+.fb:hover{border-color:var(--text3);color:var(--text)}.fb.active{background:rgba(88,166,255,.15);border-color:var(--accent);color:var(--accent)}
+#ctb{width:100%;border-collapse:collapse;font-size:12px}
+#ctb th{background:var(--surface2);color:var(--text2);font-size:10px;text-transform:uppercase;letter-spacing:.05em;padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);position:sticky;top:52px;z-index:10}
+#ctb td{padding:5px 10px;border-bottom:1px solid rgba(48,54,61,.6);vertical-align:middle}
+#ctb tr:last-child td{border-bottom:none}#ctb tr:hover td{background:var(--surface2)}
+.cl2{font-size:10px;padding:1px 6px;border-radius:8px;border:1px solid;white-space:nowrap}
+.hr{display:none!important}
+.nr{text-align:center;padding:40px;color:var(--text3)}.nr.h{display:none}
+.tm{height:6px;background:var(--surface2);border-radius:3px;overflow:hidden;margin:8px 0}
+.tf{height:100%;border-radius:3px}
+.pg{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px}
+.bdg{display:inline-block;padding:1px 7px;border-radius:10px;font-size:11px;font-weight:500}
+.bb{background:rgba(88,166,255,.15);color:var(--accent);border:1px solid rgba(88,166,255,.3)}
+.bg2{background:rgba(86,211,100,.12);color:var(--green);border:1px solid rgba(86,211,100,.25)}
+.bp{background:rgba(188,140,255,.12);color:var(--purple);border:1px solid rgba(188,140,255,.25)}
+footer{border-top:1px solid var(--border);text-align:center;padding:16px;color:var(--text3);font-size:12px;margin-top:40px}
+footer code{color:var(--text2)}
+</style>
+</head>
+<body>
+<div id="header">
+  <div class="header-inner">
+    <div class="logo">Claude Code <span>&#8984;</span></div>
+    <div id="search-wrap">
+      <span class="si">&#x2315;</span>
+      <input id="search" type="text" placeholder="Search commands, skills&#8230; (Esc to clear)" autocomplete="off" spellcheck="false">
+      <button id="sc" title="Clear">&#215;</button>
+    </div>
+    <nav class="tabs">
+      <button class="tab active" data-tab="shortcuts">Shortcuts</button>
+      <button class="tab" data-tab="skills">Skills</button>
+      <button class="tab" data-tab="prompts">Prompt Patterns</button>
+      <button class="tab" data-tab="precision">Precision</button>
+      <button class="tab" data-tab="tokens">Tokens</button>
+      <button class="tab" data-tab="models">Model Routing</button>
+      <button class="tab" data-tab="catalog">Full Catalog</button>
+      <button class="tab" data-tab="how">How Claude Works</button>
+    </nav>
+  </div>
+</div>
+<main>
+
+<section id="tab-shortcuts" class="panel active">
+<h2>Shortcuts &amp; CLI</h2>
+<div class="g2">
+<div>
+<div class="card" style="margin-bottom:16px">
+<p style="font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--text2);margin-bottom:10px">In-Session Keybindings</p>
+<table class="ct">
+<tr><td><div class="cc"><kbd>Shift</kbd>+<kbd>Tab</kbd><button class="cb" data-copy="Shift+Tab">copy</button></div></td><td class="cd">Toggle auto-accept edits mode (Bash still prompts)</td></tr>
+<tr><td><div class="cc"><kbd>#</kbd> text<button class="cb" data-copy="#">copy</button></div></td><td class="cd">Remember instruction, writes to CLAUDE.md automatically</td></tr>
+<tr><td><div class="cc"><kbd>!</kbd> cmd<button class="cb" data-copy="!">copy</button></div></td><td class="cd">Run bash locally; output injected into Claude context</td></tr>
+<tr><td><div class="cc"><kbd>Esc</kbd><button class="cb" data-copy="Esc">copy</button></div></td><td class="cd">Safely stop Claude mid-task (no corruption, no lost state)</td></tr>
+<tr><td><div class="cc"><kbd>Esc</kbd> <kbd>Esc</kbd><button class="cb" data-copy="Esc Esc">copy</button></div></td><td class="cd">Jump back in conversation history</td></tr>
+<tr><td><div class="cc"><kbd>Ctrl</kbd>+<kbd>R</kbd><button class="cb" data-copy="Ctrl+R">copy</button></div></td><td class="cd">Show full context window output</td></tr>
+<tr><td><div class="cc"><kbd>&#8997;</kbd>+<kbd>T</kbd><button class="cb" data-copy="Option+T">copy</button></div></td><td class="cd">Toggle extended thinking (on by default, up to 31,999 tokens)</td></tr>
+<tr><td><div class="cc"><kbd>Ctrl</kbd>+<kbd>O</kbd><button class="cb" data-copy="Ctrl+O">copy</button></div></td><td class="cd">Verbose mode, see thinking output</td></tr>
+</table>
+</div>
+<div class="card">
+<p style="font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--text2);margin-bottom:10px">CLI Flags &amp; Slash Commands</p>
+<table class="ct">
+<tr><td><div class="cc"><code class="cm">claude --resume</code><button class="cb" data-copy="claude --resume">copy</button></div></td><td class="cd">Resume previous session</td></tr>
+<tr><td><div class="cc"><code class="cm">claude -p "..."</code><button class="cb" data-copy="claude -p &quot;&quot;">copy</button></div></td><td class="cd">Run as Unix utility; pipe input, get JSON output</td></tr>
+<tr><td><div class="cc"><code class="cm">/model opus</code><button class="cb" data-copy="/model opus">copy</button></div></td><td class="cd">Switch to Opus 4.7 (planning, architecture)</td></tr>
+<tr><td><div class="cc"><code class="cm">/model sonnet</code><button class="cb" data-copy="/model sonnet">copy</button></div></td><td class="cd">Return to Sonnet 4.6 (default workhorse)</td></tr>
+<tr><td><div class="cc"><code class="cm">/model haiku</code><button class="cb" data-copy="/model haiku">copy</button></div></td><td class="cd">Switch to Haiku 4.5 (fast, cheap, narrow tasks)</td></tr>
+<tr><td><div class="cc"><code class="cm">/clear</code><button class="cb" data-copy="/clear">copy</button></div></td><td class="cd">Clear context window</td></tr>
+<tr><td><div class="cc"><code class="cm">/goal &lt;condition&gt;</code><button class="cb" data-copy="/goal ">copy</button></div></td><td class="cd">Session completion gate; Claude runs until Haiku confirms</td></tr>
+<tr><td><div class="cc"><code class="cm">/goal</code><button class="cb" data-copy="/goal">copy</button></div></td><td class="cd">Check /goal status</td></tr>
+<tr><td><div class="cc"><code class="cm">/goal clear</code><button class="cb" data-copy="/goal clear">copy</button></div></td><td class="cd">Cancel active /goal</td></tr>
+<tr><td><div class="cc"><code class="cm">/ship</code><button class="cb" data-copy="/ship">copy</button></div></td><td class="cd">Full pipeline: lint, type-check, test, build, commit, push, PR</td></tr>
+<tr><td><div class="cc"><code class="cm">/plan</code><button class="cb" data-copy="/plan">copy</button></div></td><td class="cd">Planning router (auto-picks brief/task-graph/grill)</td></tr>
+<tr><td><div class="cc"><code class="cm">/plan brief</code><button class="cb" data-copy="/plan brief">copy</button></div></td><td class="cd">One-liner to full product brief</td></tr>
+<tr><td><div class="cc"><code class="cm">/plan grill</code><button class="cb" data-copy="/plan grill">copy</button></div></td><td class="cd">Relentless interview until zero ambiguity</td></tr>
+<tr><td><div class="cc"><code class="cm">/plan task-graph</code><button class="cb" data-copy="/plan task-graph">copy</button></div></td><td class="cd">Feature to parallelizable YAML task graph</td></tr>
+<tr><td><div class="cc"><code class="cm">/plan prd</code><button class="cb" data-copy="/plan prd">copy</button></div></td><td class="cd">Conversation to formal PRD</td></tr>
+<tr><td><div class="cc"><code class="cm">/plan issues</code><button class="cb" data-copy="/plan issues">copy</button></div></td><td class="cd">Plan to GitHub issues (vertical-slice)</td></tr>
+<tr><td><div class="cc"><code class="cm">/html</code><button class="cb" data-copy="/html">copy</button></div></td><td class="cd">Produce rich HTML artifact instead of markdown</td></tr>
+</table>
+</div>
+</div>
+<div>
+<div class="cl" style="margin-bottom:12px"><div class="ct2">Power Pattern: Feedback Loop (Highest Leverage)</div><p>Give Claude a runnable feedback loop: unit tests, Puppeteer screenshots, iOS simulator output. When Claude can check its own work, 2-3 self-iterations produce near-perfect results. The single highest-leverage pattern.</p></div>
+<div class="cl y" style="margin-bottom:12px"><div class="ct2">Power Pattern: Plan First</div><p>"Before you write code, make a plan. Ask me for approval first." Claude brainstorms, presents options, waits for OK before touching files. No special tool needed.</p></div>
+<div class="cl g" style="margin-bottom:12px"><div class="ct2">Power Pattern: commit push PR</div><p>Say "commit push PR". Claude reads git history for commit format, writes the message, pushes the branch, opens the PR. Use <code style="color:var(--accent2)">gh-axi</code> instead of <code style="color:var(--accent2)">gh</code>.</p></div>
+<div class="cl p" style="margin-bottom:12px"><div class="ct2">Power Pattern: claude -p as Unix Utility</div><p><code style="color:var(--accent2);font-size:12px">git status | claude -p "summarize what changed and why"</code><br><code style="color:var(--accent2);font-size:12px">cat error.log | claude -p "what's interesting" --output-format json | jq</code><br>Use in CI, incident response, log analysis, any pipeline needing AI reasoning on streamed input.</p></div>
+<div class="cl" style="margin-bottom:12px"><div class="ct2">Power Pattern: Parallel Worktree Sessions</div><p>Run multiple Claude sessions in parallel: several git worktrees of the same repo, each in its own tmux pane. Changes don't collide. Use <code style="color:var(--accent2)">superpowers:using-git-worktrees</code>.</p></div>
+<div class="cl y" style="margin-bottom:12px"><div class="ct2">Power Pattern: Codebase Q&amp;A Before Edits</div><p>Start unfamiliar codebases with Q&amp;A, not edits. Ask how things work, why decisions were made. Claude explores deeper than grep. Anthropic onboards new engineers 2-3 weeks down to 2-3 days this way.</p></div>
+<div class="cl r"><div class="ct2">Trident Cross-Audit</div><p>For auth, payments, middleware, migrations, secrets: dispatch <code style="color:var(--accent2)">code-reviewer</code> + <code style="color:var(--accent2)">security-reviewer</code> in parallel, cold context. Consensus = fix before merging. Contested = escalate to Opus.</p></div>
+</div>
+</div>
+</section>
+
+<section id="tab-skills" class="panel">
+<h2>Skills <span style="font-size:13px;font-weight:400;color:var(--text3)">Click section header to collapse</span></h2>
+<div id="skills-container"></div>
+</section>
+
+<section id="tab-prompts" class="panel">
+<h2>Prompt Patterns</h2>
+<div class="pg" id="prompts-container"></div>
+</section>
+
+<section id="tab-precision" class="panel">
+<h2>Precision Techniques</h2>
+<div class="pg" id="precision-container"></div>
+</section>
+
+<section id="tab-tokens" class="panel">
+<h2>Token &amp; Context Management</h2>
+<div id="tokens-container"></div>
+</section>
+
+<section id="tab-models" class="panel">
+<h2>Model Routing</h2>
+<div id="models-container"></div>
+</section>
+
+<section id="tab-catalog" class="panel">
+<h2>Full Skill Catalog</h2>
+<div id="cfs"></div>
+<div id="cnr" class="nr h">No skills match your search or filter.</div>
+<table id="ctb">
+<thead><tr><th>Skill / Command</th><th>Description</th><th>Category</th></tr></thead>
+<tbody id="ctbd"></tbody>
+</table>
+</section>
+
+<section id="tab-how" class="panel">
+<h2>How Claude Works</h2>
+
+<div class="g2">
+
+<div>
+<div class="card" style="margin-bottom:16px">
+<div class="ct2">Context Window</div>
+<ul>
+<li>Claude reads the full conversation top-to-bottom on every turn. No memory between sessions.</li>
+<li>Primacy + recency: instructions at the start and end of the window get the most attention.</li>
+<li>Past ~70% full, performance on complex tasks degrades. Run <code>strategic-compact</code> before hitting this.</li>
+<li>Each tool call result adds to the window. Parallel tool calls are cheaper (fewer round-trips).</li>
+<li>Long CLAUDE.md wastes tokens on every turn. Keep it short.</li>
+</ul>
+</div>
+
+<div class="card" style="margin-bottom:16px">
+<div class="ct2">How Claude Reads Requests</div>
+<ul>
+<li>Infers full output spec from partial requests using task-category defaults.</li>
+<li>"Write a report" → exec summary + KPIs + table + verdict</li>
+<li>Ambiguous format → Claude picks one and states the assumption</li>
+<li>Override by stating the output spec explicitly: "Give me just the function, no explanation."</li>
+</ul>
+</div>
+
+<div class="card" style="margin-bottom:16px">
+<div class="ct2">Thinking Modes</div>
+<ul>
+<li><strong>Extended thinking (⌥T):</strong> internal reasoning up to 31,999 tokens. Best for architecture, complex debugging, multi-constraint problems. Skip for simple lookups and formatting.</li>
+<li><strong>Verbose thinking (Ctrl+O):</strong> shows Claude's chain of thought. Good for auditing whether Claude understood the problem.</li>
+<li>Overthinking is a failure mode too. Claude stops refining when passes stabilize.</li>
+</ul>
+</div>
+
+<div class="card" style="margin-bottom:16px">
+<div class="ct2">Subagents and Parallel Work</div>
+<ul>
+<li>Every subagent gets its own context window. Protects main context from lengthy reads/searches.</li>
+<li>Use for: independent parallel tasks, fresh-perspective code review, long searches, tracer runs.</li>
+<li>Tracer rule: run one subagent end-to-end before dispatching a fleet. Tracer failure = fix the plan, not the prompts.</li>
+</ul>
+</div>
+</div>
+
+<div>
+<div class="card" style="margin-bottom:16px">
+<div class="ct2">Hallucination — When and Why</div>
+<p>Next-token predictor. Thin training data = fluent but potentially wrong output.</p>
+<div class="cl r" style="margin-top:8px"><div class="ct2">High-risk triggers — verify before asserting</div>
+<ul>
+<li>Library API signatures and named exports</li>
+<li>Exact file paths, line numbers, folder structure</li>
+<li>Version-specific behavior (Next.js 15 vs 14, Tailwind v3 vs v4)</li>
+<li>Named functions not read this session</li>
+<li>Dates, numbers, commit hashes</li>
+</ul>
+</div>
+<p style="margin-top:8px"><strong>Mitigations:</strong> "Read [file:line] first." / "Quote the file:line backing every claim." / "It's OK to say you don't know." / Run the build/test instead of reasoning about it.</p>
+</div>
+
+<div class="cl g" style="margin-bottom:16px"><div class="ct2">Feedback Loops (Highest Leverage)</div>
+<p>The single highest-leverage pattern: give Claude a way to verify its own work.</p>
+<ul>
+<li><strong>Unit tests:</strong> Claude runs the test, sees pass/fail, self-corrects</li>
+<li><strong>Screenshots (Playwright/Puppeteer):</strong> Claude sees rendered UI, adjusts</li>
+<li><strong>Linter/type-checker output:</strong> Claude sees errors, fixes them</li>
+<li><strong>Build output:</strong> Claude sees compile error, resolves it</li>
+</ul>
+<p>With a feedback loop, 2-3 self-iterations produce near-perfect results. Without one, Claude declares success based on reasoning alone — unreliable.</p>
+</div>
+
+<div class="card" style="margin-bottom:16px">
+<div class="ct2">Anti-Patterns</div>
+<table class="mt">
+<thead><tr><th>Anti-pattern</th><th>What to do instead</th></tr></thead>
+<tbody>
+<tr><td>"Fix it" with no context</td><td>Provide file:line + expected vs actual</td></tr>
+<tr><td>Pasting entire large files</td><td>Cite the path, let Claude read</td></tr>
+<tr><td>Long CLAUDE.md with obvious things</td><td>Keep only non-obvious conventions</td></tr>
+<tr><td>Using Opus for formatting</td><td>Use Haiku (3x cheaper, same result)</td></tr>
+<tr><td>Declaring fixed before running tests</td><td>Run tests first, then report</td></tr>
+<tr><td>Asking Claude to guess API signatures</td><td>"Check the docs/package.json first"</td></tr>
+<tr><td>Mixing unrelated tasks in one session</td><td>/clear between them</td></tr>
+<tr><td>Letting context hit 90%+</td><td>Run strategic-compact at 70%</td></tr>
+<tr><td>One big vague question</td><td>Break into specific sub-questions</td></tr>
+<tr><td>"It doesn't work"</td><td>Describe what specifically fails</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+
+</div>
+
+<div class="ct2" style="margin:16px 0 8px">Tips</div>
+<div class="cl g" style="margin-bottom:8px"><p>Always run <code>superpowers:verification-before-completion</code> before claiming any fix is done.</p></div>
+<div class="cl g" style="margin-bottom:8px"><p>Use <code>mp-diagnose</code> for any bug before attempting a fix. Never go straight to editing.</p></div>
+<div class="cl g" style="margin-bottom:8px"><p>The feedback loop is the highest-leverage pattern. Always give Claude a way to verify its own work.</p></div>
+<div class="cl g" style="margin-bottom:8px"><p>Use <code>mp-caveman</code> when context is heavy and you just need fast answers — no prose needed.</p></div>
+<div class="cl g" style="margin-bottom:8px"><p>Invoke skills explicitly by name. Claude won't auto-use them unless triggered or invoked.</p></div>
+<div class="cl g" style="margin-bottom:8px"><p>Break big tasks into small ones with a verifiable acceptance criterion per step.</p></div>
+<div class="cl g" style="margin-bottom:8px"><p>Use subagents for work you want a fresh, unbiased perspective on (code review, security audit).</p></div>
+<div class="cl g" style="margin-bottom:8px"><p>Run <code>/cheatsheet</code> after installing new skills to keep this file current.</p></div>
+
+</section>
+
+</main>
+<footer>Claude Code Cheat Sheet &mdash; Santino Gatmaytan &mdash; re-generate: <code>claude 'update the cheat sheet'</code></footer>
+
+<script>
+var SKILLS=[
+ {cat:"Planning & Architecture",items:[
+  ["/plan","Auto-routes to brief/task-graph/grill based on context"],
+  ["/plan brief","One-liner to full product brief with scope, risks, stack decisions"],
+  ["/plan task-graph","Feature to parallelizable YAML task graph with agent/model assignments"],
+  ["/plan grill","Relentless interview until zero ambiguity"],
+  ["/plan prd","Conversation to formal PRD, published to issue tracker"],
+  ["/plan issues","Plan to vertical-slice GitHub issues (AFK/HITL labeled)"],
+  ["/plan spec","Spec-locked development with SPEC.md gate (prevents scope drift)"],
+  ["brief","Standalone brief skill"],
+  ["task-graph-planner","Break request into parallelizable YAML task graph"],
+  ["agent-skills:planning-and-task-breakdown","Planning and task breakdown patterns"],
+  ["agent-skills:idea-refine","Refine fuzzy ideas into actionable specs"],
+ ]},
+ {cat:"Debugging & Error Recovery",items:[
+  ["mp-diagnose","Build feedback loop before touching a fix"],
+  ["superpowers:systematic-debugging","Bisect and instrument methodology"],
+  ["superpowers:verification-before-completion","Run before claiming anything is fixed"],
+  ["mp-zoom-out","Architecture map for unfamiliar code"],
+  ["codebase-onboarding","Generate structured onboarding guide with architecture map and CLAUDE.md"],
+  ["debugging-and-error-recovery","General debugging patterns"],
+  ["agent-skills:debugging-and-error-recovery","Debugging patterns (agent-skills variant)"],
+  ["verification-loop","Loop until condition passes"],
+  ["build-fix","Fix build errors"],
+  ["quality-gate","Quality gate before shipping"],
+ ]},
+ {cat:"TDD & Testing",items:[
+  ["mp-tdd","Vertical-slice TDD, one test at a time, never horizontal slicing"],
+  ["/test","TDD router: default is one failing test then implement"],
+  ["/test e2e","Playwright E2E with Page Object Model"],
+  ["/test regression","AI regression suite for routes just modified"],
+  ["/test coverage","Audit coverage gaps and add missing tests"],
+  ["/test fix","Diagnose and fix a failing test"],
+  ["/test vitest","Vitest config, mocking, fixtures, watch mode"],
+  ["tdd","TDD workflow"],
+  ["tdd-workflow","TDD workflow patterns"],
+  ["test-driven-development","Test-driven development"],
+  ["agent-skills:test-driven-development","TDD (agent-skills variant)"],
+  ["ai-regression-testing","AI regression suite"],
+  ["browser-testing-with-devtools","Browser testing with DevTools"],
+  ["playwright-recording","Record Playwright tests"],
+  ["e2e-testing","E2E testing patterns"],
+  ["vitest","Vitest configuration and patterns"],
+  ["setup-testing","Set up testing infrastructure"],
+  ["test-coverage","Audit and improve test coverage"],
+  ["python-testing","Python testing patterns"],
+  ["kotlin-testing","Kotlin testing patterns"],
+  ["golang-testing","Go testing patterns"],
+  ["rust-testing","Rust testing patterns"],
+  ["cpp-testing","C++ testing patterns"],
+  ["perl-testing","Perl testing patterns"],
+  ["django-tdd","Django TDD"],
+  ["laravel-tdd","Laravel TDD"],
+  ["springboot-tdd","Spring Boot TDD"],
+ ]},
+ {cat:"Next.js & Vercel Stack",items:[
+  ["vercel:nextjs","App Router, layouts, Server Components"],
+  ["vercel-plugin:nextjs","App Router RSC (plugin variant)"],
+  ["vercel:next-cache-components","PPR and use cache patterns"],
+  ["vercel-plugin:next-cache-components","Next cache components (plugin variant)"],
+  ["vercel:turbopack","Turbopack configuration"],
+  ["vercel-plugin:turbopack","Turbopack (plugin variant)"],
+  ["vercel:routing-middleware","Request interception before cache"],
+  ["vercel-plugin:routing-middleware","Routing middleware (plugin variant)"],
+  ["vercel:vercel-functions","Serverless, edge, Fluid Compute"],
+  ["vercel-plugin:vercel-functions","Vercel Functions (plugin variant)"],
+  ["vercel:runtime-cache","Per-region KV cache with tag invalidation"],
+  ["vercel-plugin:runtime-cache","Runtime cache (plugin variant)"],
+  ["vercel:react-best-practices","RSC/RCC boundaries and best practices"],
+  ["vercel-plugin:react-best-practices","React best practices (plugin variant)"],
+  ["vercel:next-upgrade","Upgrade Next.js versions"],
+  ["vercel-plugin:next-upgrade","Next upgrade (plugin variant)"],
+  ["vercel:next-forge","Next Forge patterns"],
+  ["vercel-plugin:next-forge","Next Forge (plugin variant)"],
+  ["vercel:vercel-sandbox","Sandbox environments"],
+  ["vercel-plugin:vercel-sandbox","Vercel Sandbox (plugin variant)"],
+  ["vercel:vercel-cli","Vercel CLI commands"],
+  ["vercel-plugin:vercel-cli","Vercel CLI (plugin variant)"],
+  ["vercel:knowledge-update","Correct outdated Vercel knowledge"],
+  ["vercel-plugin:knowledge-update","Knowledge update (plugin variant)"],
+  ["vercel:workflow","Vercel workflow patterns"],
+  ["vercel-plugin:workflow","Workflow (plugin variant)"],
+  ["nextjs-supabase-auth","Next.js and Supabase auth integration"],
+  ["nextjs-app-router-patterns","App Router patterns"],
+  ["nextjs-turbopack","Turbopack-specific patterns"],
+  ["create-server-action","Server Actions scaffolding"],
+  ["migrate-to-app-router","Pages Router to App Router migration"],
+ ]},
+ {cat:"Deployment & CI/CD",items:[
+  ["/ship","Full pipeline: lint, type-check, test, build, commit, push, PR"],
+  ["vercel:deploy","Deploy project to Vercel"],
+  ["vercel-plugin:deploy","Deploy (plugin variant)"],
+  ["vercel:status","Deployment status check"],
+  ["vercel-plugin:status","Status (plugin variant)"],
+  ["vercel:env","Environment variable management"],
+  ["vercel-plugin:env-vars","Env vars (plugin variant)"],
+  ["vercel:verification","End-to-end check before shipping"],
+  ["vercel-plugin:verification","Verification (plugin variant)"],
+  ["vercel:deployments-cicd","CI/CD, preview URLs, promotions, rollbacks"],
+  ["vercel-plugin:deployments-cicd","Deployments CI/CD (plugin variant)"],
+  ["vercel:bootstrap","Bootstrap new Vercel project"],
+  ["vercel-plugin:bootstrap","Bootstrap (plugin variant)"],
+  ["vercel:marketplace","Vercel integrations marketplace"],
+  ["vercel-plugin:marketplace","Marketplace (plugin variant)"],
+  ["deployment-patterns","Docker, health checks, rollback strategies for non-Vercel"],
+  ["ci-cd-and-automation","CI/CD and automation patterns"],
+  ["agent-skills:ci-cd-and-automation","CI/CD (agent-skills variant)"],
+  ["shipping-and-launch","Shipping and launch checklist"],
+  ["agent-skills:shipping-and-launch","Shipping and launch (agent-skills variant)"],
+  ["pm2","Process management with PM2"],
+ ]},
+ {cat:"Database",items:[
+  ["/db supabase","Supabase: auth, RLS, client setup, CLI, security traps"],
+  ["/db schema","Schema design, data types, naming conventions"],
+  ["/db query","Indexes, EXPLAIN ANALYZE, N+1 fixes, connection pooling"],
+  ["/db migrate","Zero-downtime migrations, Supabase CLI, rollback planning"],
+  ["/db rls","Row Level Security: design, test, audit"],
+  ["/db audit","Security audit: RLS gaps, service key exposure"],
+  ["/db analytics","ClickHouse for event logs, metrics, time-series workloads"],
+  ["supabase","Supabase full skill"],
+  ["supabase-postgres-best-practices","Supabase Postgres best practices"],
+  ["postgres-patterns","PostgreSQL patterns"],
+  ["database-migrations","Database migration patterns"],
+  ["nextjs-supabase-auth","Next.js and Supabase auth integration"],
+  ["clickhouse-io","ClickHouse IO patterns"],
+ ]},
+ {cat:"AI & Claude API",items:[
+  ["claude-api","Anthropic SDK with prompt caching (use when code imports @anthropic-ai/sdk)"],
+  ["vercel:ai-sdk","Chat, text gen, streaming, tool use"],
+  ["vercel-plugin:ai-sdk","AI SDK (plugin variant)"],
+  ["vercel:ai-gateway","Provider routing and failover"],
+  ["vercel-plugin:ai-gateway","AI Gateway (plugin variant)"],
+  ["vercel:chat-sdk","Chat patterns"],
+  ["vercel-plugin:chat-sdk","Chat SDK (plugin variant)"],
+  ["vercel:vercel-agent","Vercel agent patterns"],
+  ["vercel-plugin:vercel-agent","Vercel agent (plugin variant)"],
+  ["brain-analyzer","Lista AI neuromarketing brain feature"],
+  ["graph-rag","RAG with graph retrieval"],
+  ["agent-eval","Head-to-head coding agent comparison with pass rate, cost, time metrics"],
+  ["eval-harness","Evaluation framework"],
+  ["agentic-engineering","Eval-first agentic execution, decomposition, cost-aware model routing"],
+  ["ai-first-engineering","Engineering operating model for AI-native teams"],
+  ["agents","Agent patterns"],
+  ["context-engineering","Context engineering patterns"],
+  ["agent-skills:context-engineering","Context engineering (agent-skills variant)"],
+  ["iterative-retrieval","Iterative retrieval patterns"],
+  ["agent-sdk-dev:new-sdk-app","New Claude Agent SDK application scaffold"],
+ ]},
+ {cat:"Auth & Payments",items:[
+  ["vercel:auth","Clerk setup (default auth across all projects)"],
+  ["vercel-plugin:auth","Auth (plugin variant)"],
+  ["clerk-nextjs-patterns","Clerk patterns for Next.js"],
+  ["stripe:stripe-best-practices","Stripe integrations best practices"],
+  ["stripe:explain-error","Explain Stripe error codes"],
+  ["stripe:test-cards","Stripe test card numbers"],
+  ["upgrade-stripe","Upgrade Stripe SDK version"],
+  ["stripe-projects","Stripe project patterns"],
+  ["invoice-engine","Invoice generation, tax-grade schemas"],
+  ["setup-api-key","API key setup patterns"],
+ ]},
+ {cat:"Design & UI",items:[
+  ["/design screen","New screen/page from scratch (style selection, layout, components)"],
+  ["/design component","Single component or UI element"],
+  ["/design system","Tailwind v4 design system, tokens, shadcn theming"],
+  ["/design redesign","Diagnose and fix existing UI (typography, color, layout, motion)"],
+  ["/design figma","Figma to code"],
+  ["/design ux","UX audit, accessibility, interaction patterns"],
+  ["/design mobile","iOS/Android/React Native conventions"],
+  ["/design canvas","Art/illustration generation as PNG/PDF"],
+  ["/design brand","Brand kit, color palette, typography, voice"],
+  ["vercel:shadcn","shadcn component registry management"],
+  ["vercel-plugin:shadcn","shadcn (plugin variant)"],
+  ["shadcn","shadcn/ui component patterns"],
+  ["add-component","Add a new component"],
+  ["create-component","Create a new component"],
+  ["create-variant","Create component variants with CVA"],
+  ["create-page","Create a new page"],
+  ["create-data-table","Build data tables"],
+  ["setup-form","Forms with React Hook Form and Zod"],
+  ["setup-dark-mode","Dark mode setup"],
+  ["init-tailwind","Tailwind initialization"],
+  ["tailwind-design-system","Tailwind design system patterns"],
+  ["design-system","Design system audit and generation"],
+  ["21st-frontend-design","21st.dev frontend design patterns"],
+  ["ui-ux-pro-max","Advanced UX patterns"],
+  ["web-design-guidelines","Web design best practices"],
+  ["liquid-glass-design","iOS 26 Liquid Glass material for SwiftUI, UIKit, WidgetKit"],
+  ["material-3","Material 3 design system"],
+  ["frontend-patterns","Frontend architecture patterns"],
+  ["frontend-ui-engineering","Frontend UI engineering"],
+  ["agent-skills:frontend-ui-engineering","Frontend UI engineering (agent-skills variant)"],
+  ["react-performance-optimization","React performance optimization"],
+  ["optimize-components","Optimize component rendering performance"],
+  ["optimize-bundle","Bundle size optimization"],
+  ["analyze-accessibility","Accessibility audit (WCAG 2.1 AA)"],
+  ["analyze-performance","Performance analysis"],
+  ["css-animations","CSS animation patterns"],
+  ["canvas-procedural-animation","Canvas procedural animation"],
+  ["html-artifacts","Rich self-contained HTML output artifacts"],
+  ["frontend-slides","Animated HTML presentations"],
+  ["excalidraw","Excalidraw diagrams"],
+  ["beautiful-mermaid","Styled Mermaid diagrams"],
+  ["d3-viz","D3 data visualizations"],
+  ["dashboard-builder","Operator-grade monitoring dashboards (Grafana, SigNoz)"],
+  ["framer-motion","Framer Motion animations"],
+ ]},
+ {cat:"Figma",items:[
+  ["figma:figma-use","MANDATORY first before any Figma work"],
+  ["figma:figma-generate-design","Whole-page design generation"],
+  ["figma:figma-generate-library","Build or update design system library"],
+  ["figma:figma-code-connect","Code connect mappings"],
+  ["figma:figma-create-new-file","Create new Figma file"],
+  ["figma:figma-generate-diagram","Diagram generation in Figma"],
+  ["figma:figma-use-figjam","FigJam boards"],
+  ["figma:figma-use-slides","Figma slides"],
+  ["lazyweb:lazyweb-design-brainstorm","Design inspiration brainstorming"],
+  ["lazyweb:lazyweb-design-improve","Improve existing design"],
+  ["lazyweb:lazyweb-design-research","Design research"],
+  ["lazyweb:lazyweb-quick-references","Quick design references"],
+ ]},
+ {cat:"Animation - GSAP",items:[
+  ["gsap","GSAP skill router"],
+  ["gsap-core","Core GSAP tweens and basics"],
+  ["gsap-timeline","Timeline orchestration"],
+  ["gsap-scrolltrigger","Scroll-based animations with ScrollTrigger"],
+  ["gsap-plugins","All GSAP plugins"],
+  ["gsap-utils","GSAP utility methods"],
+  ["gsap-performance","GSAP performance optimization"],
+  ["gsap-react","GSAP and React integration patterns"],
+  ["gsap-frameworks","Framework-specific GSAP patterns"],
+ ]},
+ {cat:"Animation - Three.js",items:[
+  ["three","Three.js skill router"],
+  ["threejs-fundamentals","Scene, camera, renderer setup"],
+  ["threejs-materials","PBR materials"],
+  ["threejs-textures","Texture loading and mapping"],
+  ["threejs-geometry","Geometries and meshes"],
+  ["threejs-shaders","GLSL shaders"],
+  ["threejs-lighting","Lighting setups"],
+  ["threejs-animation","Three.js animation system"],
+  ["threejs-postprocessing","Post-processing effects"],
+  ["threejs-interaction","Raycasting, controls, interaction"],
+  ["threejs-loaders","Asset loaders (GLTF, etc.)"],
+ ]},
+ {cat:"Animation - Other",items:[
+  ["animejs","Anime.js animations"],
+  ["lottie","Lottie animations"],
+  ["lottie-bodymovin","Lottie Bodymovin export patterns"],
+  ["svg-character-animation","SVG character animation"],
+  ["waapi","Web Animations API"],
+  ["remotion","React-based video creation"],
+  ["remotion-best-practices","Remotion best practices"],
+  ["remotion-to-hyperframes","Convert Remotion to Hyperframes"],
+  ["pose-library-design","Pose library for character animation"],
+  ["character-rigging","Character rigging"],
+  ["character-animation-qa","Animation QA"],
+  ["manimce-best-practices","Manim Community Edition best practices"],
+  ["manimgl-best-practices","ManimGL best practices"],
+  ["manim-composer","Manim composition"],
+ ]},
+ {cat:"Hyperframes",items:[
+  ["hyperframes","Hyperframes framework"],
+  ["hyperframes-cli","Hyperframes CLI tools"],
+  ["hyperframes-registry","Hyperframes component registry"],
+  ["hyperframes-media","Hyperframes media handling"],
+  ["website-to-hyperframes","Convert website to Hyperframes"],
+  ["tailwind-hyperframes","Tailwind and Hyperframes integration"],
+  ["remotion-to-hyperframes","Convert Remotion to Hyperframes"],
+ ]},
+ {cat:"Video & Media",items:[
+  ["/video","Video production router (video-pro skill)"],
+  ["video-edit","Video editing"],
+  ["video-understand","Video analysis and understanding"],
+  ["video-translate","Video translation"],
+  ["video-to-wiki","Convert video to documentation"],
+  ["video-download","Download videos"],
+  ["create-video","Create videos"],
+  ["ai-video-gen","AI video generation"],
+  ["video_toolkit","Video toolkit"],
+  ["ffmpeg","FFmpeg commands"],
+  ["synthetic-screen-recording","Synthetic screen recordings"],
+  ["heygen","HeyGen AI video generation"],
+  ["avatar-video","Avatar video creation"],
+  ["ltx2","LTX-2 video model"],
+  ["seedance-2-0","Seedance 2.0 video model"],
+  ["faceswap","Face swap"],
+  ["grok-media","Grok media generation"],
+  ["bfl-api","Black Forest Labs API"],
+  ["flux-best-practices","FLUX image generation best practices"],
+ ]},
+ {cat:"Audio & Voice",items:[
+  ["elevenlabs","ElevenLabs TTS"],
+  ["text-to-speech","TTS general patterns"],
+  ["speech-to-text","Speech-to-text"],
+  ["sound-effects","Sound effect generation"],
+  ["music","Music generation"],
+  ["acestep","ACE-Step audio model"],
+ ]},
+ {cat:"Manim & Data Viz",items:[
+  ["manim-composer","Manim composition skill"],
+  ["manimce-best-practices","Manim Community Edition best practices"],
+  ["manimgl-best-practices","ManimGL best practices"],
+  ["d3-viz","D3 data visualizations"],
+  ["beautiful-mermaid","Styled Mermaid diagrams"],
+  ["excalidraw","Excalidraw diagrams"],
+  ["notebooklm","NotebookLM integration"],
+  ["graphify","Input to knowledge graph"],
+  ["notes-to-wiki","Convert notes to wiki documentation"],
+ ]},
+ {cat:"Marketing",items:[
+  ["/market","Marketing skill router"],
+  ["/market audit url","5-agent parallel audit: content, CRO, SEO, competitive, strategy"],
+  ["/market copy","Optimized copy for any page"],
+  ["/market emails","Email sequences"],
+  ["/market ads","Ad creative and copy"],
+  ["/market funnel","Sales funnel analysis"],
+  ["/market landing","Landing page CRO"],
+  ["/market launch","Product launch playbook"],
+  ["/market proposal","Client proposal"],
+  ["/market report","Full marketing report (MD or PDF)"],
+  ["/market seo","SEO content audit"],
+  ["/market brand","Brand voice guidelines"],
+  ["/market competitors","Competitive intelligence"],
+  ["market-report-pdf","PDF marketing report"],
+  ["geo-seo","JSON-LD, schema.org, OG tags, GEO/AI citation optimization"],
+  ["seo","Technical SEO audit, Core Web Vitals, structured data, keyword mapping"],
+  ["searchfit-seo:seo-audit","SearchFit SEO audit"],
+  ["searchfit-seo:keyword-clustering","Keyword clustering"],
+  ["searchfit-seo:schema-markup","Schema markup generation"],
+  ["searchfit-seo:content-strategy","Content strategy"],
+  ["searchfit-seo:on-page-seo","On-page SEO optimization"],
+  ["searchfit-seo:technical-seo","Technical SEO"],
+  ["searchfit-seo:content-brief","Content briefs"],
+  ["searchfit-seo:internal-linking","Internal linking strategy"],
+  ["searchfit-seo:ai-visibility","AI/GEO visibility optimization"],
+  ["searchfit-seo:broken-links","Broken link detection"],
+  ["market-emails","Email sequence generation"],
+  ["market-landing","Landing page patterns"],
+  ["market-launch","Launch playbook"],
+  ["market-copy","Copy optimization"],
+  ["market-funnel","Funnel analysis"],
+  ["market-competitors","Competitive research"],
+  ["market-report","Marketing report"],
+  ["market-brand","Brand guidelines"],
+  ["market-ads","Ad creative"],
+  ["market-proposal","Client proposals"],
+  ["market-audit","Marketing audit"],
+ ]},
+ {cat:"Social Media",items:[
+  ["/social","Social media skill router"],
+  ["/social voice","Brand voice profile for social"],
+  ["/social profile","LinkedIn profile optimization"],
+  ["/social calendar","30-day content calendar"],
+  ["/social post","Voice-matched post writing"],
+  ["/social format","Framework posts: PAS/AIDA/BAB/STAR/SLAY"],
+  ["/social hook","Hook generation for any platform"],
+  ["/social score","Score post against real engagement data"],
+  ["/social research","Niche trends from last 7 days"],
+  ["/social matrix","Content matrix (Justin Welsh method)"],
+  ["/social visual","Graphics, carousels, infographics"],
+  ["/social reels","Reel scripting from reference video"],
+  ["/social analytics","LinkedIn analytics dashboard"],
+  ["/social thumbnail","YouTube thumbnail generation"],
+  ["/social newsletter","Newsletter voice system"],
+  ["social-media","Social media general skill"],
+ ]},
+ {cat:"Writing & Content",items:[
+  ["santino-fy","Rewrite in Santino's voice"],
+  ["brand-voice","Brand voice router"],
+  ["brand-voice:enforce-voice","Enforce brand voice in content"],
+  ["brand-voice:discover-brand","Discover brand voice from writing samples"],
+  ["brand-voice:generate-guidelines","Generate voice guidelines"],
+  ["scqa-writing","Situation, Complication, Question, Answer structured writing"],
+  ["source-validation","Validate sources before citing in GEO content"],
+  ["html-artifacts","Rich self-contained HTML output artifacts"],
+  ["docs","Context7 for up-to-date library docs"],
+  ["source-driven-development","Fetch docs before writing framework boilerplate"],
+  ["deep-research","Multi-source cited research with firecrawl and exa"],
+  ["anthropic-skills:docx","Word document creation"],
+  ["anthropic-skills:pptx","PowerPoint creation"],
+  ["anthropic-skills:xlsx","Excel spreadsheet creation"],
+  ["anthropic-skills:pdf","PDF creation"],
+  ["anthropic-skills:web-artifacts-builder","Web artifacts builder"],
+  ["anthropic-skills:canvas-design","Canvas design"],
+  ["notes-to-wiki","Convert notes to wiki documentation"],
+  ["video-to-wiki","Convert video to documentation"],
+  ["prompt-optimize","Optimize prompts for better results"],
+ ]},
+ {cat:"Code Quality & Review",items:[
+  ["simplify","Reduce complexity without changing behavior"],
+  ["gnhf","Reduce complexity (simplify alias)"],
+  ["code-simplification","Code simplification patterns"],
+  ["agent-skills:code-simplification","Code simplification (agent-skills variant)"],
+  ["refactor-clean","Dead code cleanup and consolidation"],
+  ["mp-improve-codebase-architecture","Architecture-level cleanup; run every few days on active projects"],
+  ["superpowers:requesting-code-review","Pre-PR code review workflow"],
+  ["superpowers:receiving-code-review","Act on code review feedback"],
+  ["code-review","Code review"],
+  ["code-review-and-quality","Code review and quality patterns"],
+  ["agent-skills:code-review-and-quality","Code review and quality (agent-skills variant)"],
+  ["security-review","Security review before auth/payment commits"],
+  ["security-scan","Scan .claude/ config for injection risks and MCP misconfigs"],
+  ["security-and-hardening","Security hardening patterns"],
+  ["agent-skills:security-and-hardening","Security hardening (agent-skills variant)"],
+  ["api-security-best-practices","API security best practices"],
+  ["security-best-practices","General security best practices"],
+  ["plankton-code-quality","Code quality patterns"],
+  ["deprecation-and-migration","Replace old systems, sunset features, migrate implementations"],
+  ["agent-skills:deprecation-and-migration","Deprecation and migration (agent-skills variant)"],
+  ["update-docs","Update documentation"],
+  ["update-codemaps","Update codemaps"],
+  ["documentation-and-adrs","Documentation and ADRs"],
+  ["agent-skills:documentation-and-adrs","Documentation and ADRs (agent-skills variant)"],
+  ["rules-distill","Extract principles from skills and distill into rule files"],
+  ["skill-comply","Measure whether skills and rules are actually followed"],
+  ["skill-health","Skill health check"],
+  ["fewer-permission-prompts","Scan transcripts and add allowlist to reduce permission prompts"],
+  ["performance-optimization","Performance optimization"],
+  ["agent-skills:performance-optimization","Performance optimization (agent-skills variant)"],
+  ["api-and-interface-design","API and interface design"],
+  ["agent-skills:api-and-interface-design","API and interface design (agent-skills variant)"],
+  ["api-design","API design patterns"],
+  ["spec-driven-development","Spec-driven development with SPEC.md"],
+  ["agent-skills:spec-driven-development","Spec-driven development (agent-skills variant)"],
+  ["incremental-implementation","Incremental implementation patterns"],
+  ["agent-skills:incremental-implementation","Incremental implementation (agent-skills variant)"],
+  ["agent-skills:git-workflow-and-versioning","Git workflow and versioning (agent-skills variant)"],
+  ["agent-skills:source-driven-development","Source-driven development (agent-skills variant)"],
+ ]},
+ {cat:"Agentic & Autonomous",items:[
+  ["/goal <condition>","Session completion gate; Claude runs until Haiku confirms the condition"],
+  ["autonomous-loops","Patterns for autonomous Claude Code loops from simple to RFC-driven multi-agent DAGs"],
+  ["agentic-engineering","Eval-first agentic execution, decomposition, cost-aware model routing"],
+  ["ai-first-engineering","Engineering operating model for AI-native teams"],
+  ["superpowers:dispatching-parallel-agents","Dispatch parallel agents correctly"],
+  ["superpowers:using-git-worktrees","Git worktrees for parallel sessions"],
+  ["superpowers:brainstorming","Structured brainstorming patterns"],
+  ["superpowers:writing-plans","Write effective implementation plans"],
+  ["superpowers:executing-plans","Execute plans autonomously"],
+  ["superpowers:finishing-a-development-branch","Finish a development branch cleanly"],
+  ["superpowers:subagent-driven-development","Subagent-driven development"],
+  ["multi-session","Multi-session workflow patterns"],
+  ["multi-execute","Multi-execution patterns"],
+  ["multi-plan","Multi-agent planning"],
+  ["multi-workflow","Multi-agent workflow orchestration"],
+  ["loop","Recurring prompt on a defined interval"],
+  ["loop-start","Start a recurring loop"],
+  ["loop-status","Check loop status"],
+  ["schedule","Cron-scheduled remote agents"],
+  ["ralph-loop","Ralph autonomous loop"],
+  ["workflow-automation","Workflow automation patterns"],
+  ["dmux-workflows","Dmux workflow patterns"],
+  ["orchestrate","Orchestration patterns"],
+  ["devfleet","Fleet management"],
+  ["instinct-import","Instinct system import"],
+  ["instinct-export","Instinct system export"],
+  ["instinct-status","Instinct system status"],
+  ["gsd","Get stuff done"],
+ ]},
+ {cat:"Superpowers (Discipline Layer)",items:[
+  ["superpowers:using-superpowers","How to use skills correctly"],
+  ["superpowers:systematic-debugging","Systematic debugging methodology"],
+  ["superpowers:verification-before-completion","Verify before claiming done"],
+  ["superpowers:requesting-code-review","Request code review pre-PR"],
+  ["superpowers:receiving-code-review","Act on code review feedback"],
+  ["superpowers:test-driven-development","TDD discipline"],
+  ["superpowers:brainstorming","Structured brainstorming"],
+  ["superpowers:writing-plans","Write effective plans"],
+  ["superpowers:executing-plans","Execute plans autonomously"],
+  ["superpowers:dispatching-parallel-agents","Parallel agent dispatch patterns"],
+  ["superpowers:using-git-worktrees","Git worktrees for parallel work"],
+  ["superpowers:finishing-a-development-branch","Finish a dev branch cleanly"],
+  ["superpowers:subagent-driven-development","Subagent-driven development"],
+  ["superpowers:writing-skills","Write new Claude Code skills"],
+ ]},
+ {cat:"Memory & Sessions",items:[
+  ["save-session","Save session at logical work chunk end"],
+  ["resume-session","Resume a project session"],
+  ["claude-mem:mem-search","Search prior sessions for prior work"],
+  ["claude-mem:make-plan","Plan with memory context"],
+  ["claude-mem:smart-explore","Smart codebase exploration with memory"],
+  ["claude-mem:knowledge-agent","Knowledge management agent"],
+  ["claude-mem:do","Execute with memory context"],
+  ["claude-mem:timeline-report","Timeline report of work done"],
+  ["claude-mem:version-bump","Version management"],
+  ["strategic-compact","Compact context at phase boundaries"],
+  ["context-budget","Audit context window consumption across all sources"],
+  ["token-budget-advisor","Choose response depth interactively"],
+  ["mp-caveman","~75% token reduction mode; toggle off to return to normal"],
+  ["memory-tree-pattern","Hierarchical local-first memory compression pattern"],
+  ["obsidian-cli","Obsidian vault CLI operations"],
+  ["obsidian-markdown","Obsidian markdown patterns"],
+  ["obsidian-bases","Obsidian Bases"],
+ ]},
+ {cat:"iOS / Swift / Android",items:[
+  ["swiftui-patterns","SwiftUI architecture, @Observable state, type-safe navigation, performance"],
+  ["liquid-glass-design","iOS 26 Liquid Glass material for SwiftUI, UIKit, WidgetKit"],
+  ["android-clean-architecture","Android clean architecture"],
+  ["kotlin-patterns","Kotlin patterns"],
+  ["kotlin-coroutines-flows","Kotlin Coroutines and Flows"],
+  ["kotlin-ktor-patterns","Ktor server patterns"],
+  ["kotlin-exposed-patterns","Exposed ORM patterns"],
+  ["kotlin-testing","Kotlin testing"],
+  ["kotlin-review","Kotlin code review"],
+  ["kotlin-build","Kotlin build"],
+  ["kotlin-test","Kotlin test runner"],
+  ["compose-multiplatform-patterns","Compose Multiplatform patterns"],
+ ]},
+ {cat:"Backend Frameworks",items:[
+  ["nestjs-patterns","NestJS modules, controllers, DTOs, guards, interceptors, config"],
+  ["nuxt4-patterns","Nuxt 4 hydration safety, route rules, lazy loading, SSR-safe data fetching"],
+  ["django-patterns","Django patterns"],
+  ["django-tdd","Django TDD"],
+  ["django-verification","Django verification"],
+  ["laravel-patterns","Laravel patterns"],
+  ["laravel-tdd","Laravel TDD"],
+  ["laravel-verification","Laravel verification"],
+  ["springboot-patterns","Spring Boot patterns"],
+  ["springboot-tdd","Spring Boot TDD"],
+  ["springboot-verification","Spring Boot verification"],
+  ["golang-patterns","Go patterns"],
+  ["golang-testing","Go testing"],
+  ["go-review","Go code review"],
+  ["go-build","Go build"],
+  ["go-test","Go test runner"],
+  ["rust-patterns","Rust patterns"],
+  ["rust-testing","Rust testing"],
+  ["rust-review","Rust code review"],
+  ["rust-build","Rust build"],
+  ["rust-test","Rust test runner"],
+  ["python-patterns","Python patterns"],
+  ["python-testing","Python testing"],
+  ["python-review","Python code review"],
+  ["java-coding-standards","Java coding standards"],
+  ["jpa-patterns","JPA/Hibernate patterns"],
+  ["cpp-coding-standards","C++ coding standards"],
+  ["cpp-testing","C++ testing"],
+  ["cpp-build","C++ build"],
+  ["cpp-test","C++ test runner"],
+  ["cpp-review","C++ code review"],
+  ["perl-patterns","Perl patterns"],
+  ["perl-testing","Perl testing"],
+  ["backend-patterns","General backend architecture patterns"],
+  ["mcp-server-patterns","MCP server patterns"],
+  ["typescript-mcp-server-generator","Generate TypeScript MCP servers"],
+ ]},
+ {cat:"GitHub & Git",items:[
+  ["github-ops","Issue triage, PR management, CI/CD operations, releases via gh CLI"],
+  ["git-workflow","Branching strategies, commit conventions, merge vs rebase, conflict resolution"],
+  ["git-workflow-and-versioning","Git workflow and versioning (agent-skills variant)"],
+  ["commit-commands:commit-push-pr","Commit, push, and open PR in one command"],
+  ["commit-commands:commit","Commit only"],
+  ["commit-commands:clean_gone","Clean gone remote-tracking branches"],
+  ["pr-review-toolkit:review-pr","PR review workflow"],
+  ["hookify","Hook generation and management"],
+  ["hookify:writing-rules","Writing hookify rules"],
+  ["fewer-permission-prompts","Scan transcripts and add allowlist to reduce permission prompts"],
+  ["update-config","Configure settings.json and hooks (automated behaviors require hooks)"],
+  ["keybindings-help","Customize keybindings in ~/.claude/keybindings.json"],
+  ["harness-audit","Audit the Claude Code harness"],
+ ]},
+ {cat:"Slack",items:[
+  ["slack:standup","Generate standup messages"],
+  ["slack:find-discussions","Find relevant Slack discussions"],
+  ["slack:summarize-channel","Channel summary"],
+  ["slack:draft-announcement","Draft Slack announcements"],
+  ["slack:channel-digest","Channel digest"],
+  ["slack:slack-search","Search Slack"],
+  ["slack:slack-messaging","Slack messaging patterns"],
+ ]},
+ {cat:"Healthcare / Financial Plugins",items:[
+  ["meeting-prep-agent","Briefing pack before client meetings (financial services plugin)"],
+  ["kyc-screener","KYC/AML document screening"],
+  ["kyc-screener:kyc-rules","KYC rules engine"],
+  ["kyc-screener:kyc-doc-parse","KYC document parsing"],
+  ["market-researcher","Sector/thematic market research"],
+  ["market-researcher:competitive-analysis","Competitive analysis"],
+  ["market-researcher:comps-analysis","Trading comparables analysis"],
+  ["financial-analysis:dcf-model","DCF valuation model"],
+  ["financial-analysis:lbo-model","LBO model"],
+  ["financial-analysis:3-statement-model","3-statement financial model"],
+  ["financial-analysis:comps-analysis","Comparable company analysis"],
+  ["financial-analysis:competitive-analysis","Competitive analysis"],
+  ["financial-analysis:ppt-template-creator","PPT template creator"],
+  ["financial-analysis:audit-xls","Audit Excel files"],
+  ["financial-analysis:debug-model","Debug financial models"],
+  ["financial-analysis:ib-check-deck","IB deck quality checker"],
+  ["financial-analysis:deck-refresh","Refresh financial decks"],
+  ["financial-analysis:xlsx-author","Excel file authoring"],
+  ["financial-analysis:pptx-author","PowerPoint authoring"],
+ ]},
+ {cat:"Product & Operations",items:[
+  ["product-management:write-spec","Write product specifications"],
+  ["product-management:brainstorm","Product brainstorming"],
+  ["product-management:roadmap-update","Roadmap updates"],
+  ["product-management:sprint-planning","Sprint planning"],
+  ["product-management:metrics-review","Metrics review"],
+  ["product-management:stakeholder-update","Stakeholder updates"],
+  ["product-tracking-skills:product-tracking-design-tracking-plan","Design a tracking plan"],
+  ["product-tracking-skills:product-tracking-implement-tracking","Implement tracking"],
+  ["product-tracking-skills:product-tracking-audit-current-tracking","Audit current tracking"],
+  ["operations:runbook","Runbook creation"],
+  ["operations:process-optimization","Process optimization"],
+  ["operations:risk-assessment","Risk assessment"],
+  ["legal:review-contract","Contract review"],
+  ["legal:triage-nda","NDA triage"],
+  ["legal:compliance-check","Compliance check"],
+ ]},
+ {cat:"Plugin & Skill Development",items:[
+  ["plugin-dev:create-plugin","Create a Claude Code plugin"],
+  ["plugin-dev:hook-development","Hook development"],
+  ["plugin-dev:plugin-structure","Plugin structure patterns"],
+  ["plugin-dev:skill-development","Skill development"],
+  ["plugin-dev:command-development","Command development"],
+  ["plugin-dev:agent-development","Agent development"],
+  ["plugin-dev:mcp-integration","MCP integration"],
+  ["skill-creator:skill-creator","Create new skills"],
+  ["mp-write-a-skill","Write a new Matt Pocock-style skill"],
+  ["agent-sdk-dev:new-sdk-app","New Claude Agent SDK application"],
+  ["update-config","Configure settings.json and hooks"],
+  ["claude-md-management:revise-claude-md","Revise CLAUDE.md"],
+  ["claude-md-management:claude-md-improver","Improve CLAUDE.md quality"],
+  ["find-skills","Find skills in the full catalog"],
+ ]},
+];
+
+var PROMPTS=[
+ {title:"Plan First, Then Code",c:"var(--accent)",t:"Before you write code, make a plan. Ask me for approval first.\n\nClaude brainstorms options, presents a plan, and waits for approval before touching any files. No special tooling needed."},
+ {title:"Feedback Loop (Highest Leverage)",c:"var(--green)",t:"Give Claude a runnable feedback loop: unit tests, Puppeteer screenshots, iOS simulator output.\n\nWhen Claude can check its own work, 2-3 self-iterations consistently produce near-perfect results. This is the single highest-leverage pattern in Claude Code."},
+ {title:"commit push PR",c:"var(--yellow)",t:"Just say commit push PR.\n\nClaude reads git history to infer commit format, writes the message, pushes the branch, opens the PR. Use gh-axi instead of gh for all GitHub operations."},
+ {title:"Trident Cross-Audit",c:"var(--red)",t:"For auth, payments, middleware, migrations, secrets:\n\nDispatch code-reviewer + security-reviewer in parallel against the same diff, cold context.\n\nConsensus finding = fix before merging.\nContested finding = escalate to Opus.\nNeither flags it = proceed."},
+ {title:"Tracer-First",c:"var(--purple)",t:"Before dispatching parallel subagents, run one prompt end-to-end as a tracer.\n\nTracer failure = the plan is wrong. Fix the plan, not just the prompt."},
+ {title:"Codebase Q&A Before Edits",c:"var(--accent)",t:"Start unfamiliar codebases with Q&A, not edits. Ask how things work, why decisions were made, how classes are instantiated.\n\nClaude explores deeper than grep, finds usage examples, linked issues, and intent. Anthropic onboards new engineers 2-3 weeks down to 2-3 days this way."},
+ {title:"claude -p as Unix Filter",c:"var(--green)",t:"git status | claude -p \"summarize what changed and why\"\ncat error.log | claude -p \"what's interesting\" --output-format json | jq '.result'\n\nTreat claude -p like a smart Unix filter. Use in CI, log analysis, incident response, any pipeline needing AI reasoning on streamed input."},
+ {title:"Parallel Worktree Sessions",c:"var(--yellow)",t:"Run multiple Claude sessions in parallel: several git worktrees of the same repo, each in its own tmux pane, each running a separate Claude session.\n\nChanges don't collide. Use superpowers:using-git-worktrees for setup."},
+ {title:"Grant Permission Not to Know",c:"var(--accent)",t:"It's okay if you don't know, just say so.\nHow confident are you? What might be wrong?\nFor each claim, quote the file:line that backs it.\n\nActively invite uncertainty over confident hallucination."},
+ {title:"One Metric, One Truth",c:"var(--purple)",t:"Every task needs a single, unambiguous success criterion before work begins.\n\nNot 'it feels better' but something measurable. Define it upfront. Optimize only for that. If you can't define the metric, you don't understand the task yet."},
+ {title:"Dumb Baseline First",c:"var(--red)",t:"Before adding any complexity, get the simplest possible thing working end-to-end.\n\nTrust the infrastructure before the model. Verify the plumbing works before optimizing what flows through it. (Karpathy principle)"},
+ {title:"Complexify One at a Time",c:"var(--yellow)",t:"Add one thing. Verify it helps. Then add the next.\n\nNever change two things simultaneously and wonder which one caused the improvement. (Karpathy principle)"},
+ {title:"Source-Driven Boilerplate",c:"var(--green)",t:"Before writing any new framework-specific boilerplate:\n1. Detect exact versions from package.json\n2. Fetch the specific docs page\n3. Implement from the docs\n4. Cite the source URL\n\nUse source-driven-development skill to enforce this."},
+ {title:"Prompt Quality Gate",c:"var(--red)",t:"Reject prompts that have:\n- Vague acceptance criteria\n- Missing context\n- Mixed concerns\n- No verification command\n- Unbounded scope\n- Missing characterization step"},
+];
+
+var PRECISION=[
+ {title:"Hallucination Rules (Always Enforced)",c:"var(--red)",t:"1. I don't know is a valid answer. Never invent a function, file, or fact.\n2. No claim about existing code without file:line read this session.\n3. Retrieve before asserting. Never paraphrase a file you haven't opened.\n4. Verify before finishing. Run tests/build/type-check, don't declare fixed on reasoning alone.\n5. Check docs for version-sensitive APIs (Next.js, Tailwind, shadcn, Vercel SDKs).\n6. Announce uncertainty inline rather than hiding it.\n7. Trust tool results over memory when they conflict.\n8. Distinguish 'I read this' from 'I remember this.'"},
+ {title:"Surgical Changes",c:"var(--accent)",t:"Do not touch adjacent code, comments, or formatting that wasn't asked about.\n\nMatch existing style exactly. Mention unrelated dead code, don't delete it.\n\nOne approval = scope of the request, not a blanket permission."},
+ {title:"File:Line Citations",c:"var(--yellow)",t:"Every claim about existing code must cite file:line.\n\nRe-read the cited file before asserting: don't trust the snippet in memory.\n\nReport 'I need to read X before answering' instead of guessing."},
+ {title:"Autonomy Policy",c:"var(--green)",t:"Do without asking: edit files, run tests, scaffold code, install local skills, fetch docs.\n\nAsk before: deleting data, force-pushing, external messages to non-self, spending money, production env vars, public brand actions, architecture decisions that lock in a stack.\n\nBig-task rule: multi-file features or architecture choices = present plan first (one screen), wait for OK."},
+ {title:"lean-ctx Tool Mapping",c:"var(--purple)",t:"ALWAYS use lean-ctx MCP instead of native equivalents:\n\nRead/cat/head/tail -> ctx_read(path, mode)\nShell/bash/terminal -> ctx_shell(command)\nGrep/rg -> ctx_search(pattern, path)\nls/find -> ctx_tree(path, depth)\n\nEdit/Write/Delete -> use natively unchanged.\nlean-ctx replaces READ operations only."},
+ {title:"ctx_read Mode Guide",c:"var(--accent)",t:"File you will edit -> full (or native Read)\nDebugging at any confidence -> full (or native Read)\nUnsure which mode -> full (or native Read)\nExploring unfamiliar code -> signatures\nContext-only, won't edit -> map\nAfter an edit, checking diff -> diff\nLarge file, need one section -> lines:N-M\n\nConfidence rule: any uncertainty = use full or native Read."},
+ {title:"Security Mandatory Checks",c:"var(--red)",t:"Before ANY commit touching auth/payments/secrets/middleware:\n- No hardcoded secrets (API keys, passwords, tokens)\n- All user inputs validated with Zod\n- SQL injection prevention (parameterized queries)\n- XSS prevention (sanitized HTML)\n- CSRF protection enabled\n- Authentication/authorization verified\n- Rate limiting on all endpoints\n- Error messages don't leak sensitive data"},
+ {title:"Code Quality Checklist",c:"var(--yellow)",t:"Before marking work complete:\n- Code is readable and well-named\n- Functions are small (<50 lines)\n- Files are focused (<800 lines)\n- No deep nesting (>4 levels)\n- Proper error handling at every level\n- No hardcoded values (use constants or config)\n- No mutation (immutable patterns used)\n- 80%+ test coverage"},
+ {title:"Obsidian Auto-Capture",c:"var(--green)",t:"Write to vault proactively when:\n- Architectural decision made -> ~/second-brain/Claude Captures/decisions/YYYY-MM-DD-<slug>.md\n- Non-obvious insight found -> ~/second-brain/Claude Captures/insights/\n- Project brief or plan finalized -> ~/second-brain/Claude Captures/plans/\n\nFrontmatter: date, project, tags, source: claude-session\n\nDo NOT capture: trivial edits, lint fixes, routine installs."},
+ {title:"TDD Mandatory Workflow",c:"var(--purple)",t:"1. Write test first (RED)\n2. Run test: it FAILS\n3. Write minimal implementation (GREEN)\n4. Run test: it PASSES\n5. Refactor (IMPROVE)\n6. Verify 80%+ coverage\n\nNever write horizontal slices. Always vertical.\nUse mp-tdd or tdd-guide agent."},
+];
+
+function renderSkills(){
+  var c=document.getElementById('skills-container');
+  var frag=document.createDocumentFragment();
+  SKILLS.forEach(function(s){
+    var sec=document.createElement('div');sec.className='ss';sec.setAttribute('data-cat',s.cat);
+    var hdr=document.createElement('div');hdr.className='sh';
+    hdr.onclick=function(){sec.classList.toggle('col');};
+    var ttl=document.createElement('span');ttl.className='st';
+    var nm=document.createElement('span');nm.textContent=s.cat;
+    var cnt=document.createElement('span');cnt.className='sc2';cnt.textContent=s.items.length;
+    ttl.appendChild(nm);ttl.appendChild(cnt);
+    var chv=document.createElement('span');chv.className='sv';chv.textContent='\u25be';
+    hdr.appendChild(ttl);hdr.appendChild(chv);
+    var body=document.createElement('div');body.className='sb';
+    s.items.forEach(function(item){
+      var row=document.createElement('div');row.className='sr';
+      row.setAttribute('data-name',item[0].toLowerCase());
+      row.setAttribute('data-desc',item[1].toLowerCase());
+      var nm2=document.createElement('span');nm2.className='sn';nm2.textContent=item[0];
+      var dsc=document.createElement('span');dsc.className='sd';dsc.textContent=item[1];
+      var btn=document.createElement('button');btn.className='cb';btn.setAttribute('data-copy',item[0]);btn.textContent='copy';
+      row.appendChild(nm2);row.appendChild(dsc);row.appendChild(btn);
+      body.appendChild(row);
+    });
+    sec.appendChild(hdr);sec.appendChild(body);
+    frag.appendChild(sec);
+  });
+  c.appendChild(frag);
+}
+
+function renderCards(data,id){
+  var c=document.getElementById(id);
+  var frag=document.createDocumentFragment();
+  data.forEach(function(p){
+    var card=document.createElement('div');card.className='card';card.style.borderLeft='3px solid '+p.c;
+    var ttl=document.createElement('p');ttl.style.cssText='font-weight:600;font-size:13px;color:'+p.c+';margin-bottom:8px';ttl.textContent=p.title;
+    var pre=document.createElement('pre');pre.style.cssText='white-space:pre-wrap;font-size:12px;color:var(--text2);font-family:inherit;line-height:1.7';pre.textContent=p.t;
+    card.appendChild(ttl);card.appendChild(pre);
+    frag.appendChild(card);
+  });
+  c.appendChild(frag);
+}
+
+function renderTokens(){
+  var c=document.getElementById('tokens-container');
+  var strats=[
+    ['mp-caveman','~75% token reduction mode. Toggle off explicitly to return to normal.'],
+    ['context-budget','Audits context window consumption across agents, skills, MCP servers, and rules.'],
+    ['token-budget-advisor','Interactive: choose response depth before answering.'],
+    ['strategic-compact','Compact at phase boundaries to preserve context while keeping key decisions.'],
+    ['/clear','Nuclear option. Clear the full context window when starting a new logical task.'],
+    ['ctx_read modes','Use map or signatures instead of full for exploration. Re-reads cost ~13 tokens.'],
+  ];
+  var outer=document.createElement('div');outer.className='g2';
+  var left=document.createElement('div');
+  var c1=document.createElement('div');c1.className='card';c1.style.marginBottom='16px';
+  var h1=document.createElement('p');h1.style.cssText='font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--text2);margin-bottom:10px';h1.textContent='Token-Saving Strategies';
+  var t1=document.createElement('table');t1.className='ct';
+  strats.forEach(function(s){
+    var tr=document.createElement('tr');
+    var td1=document.createElement('td');var div=document.createElement('div');div.className='cc';
+    var code=document.createElement('code');code.className='cm';code.textContent=s[0];
+    var btn=document.createElement('button');btn.className='cb';btn.setAttribute('data-copy',s[0]);btn.textContent='copy';
+    div.appendChild(code);div.appendChild(btn);td1.appendChild(div);
+    var td2=document.createElement('td');td2.className='cd';td2.textContent=s[1];
+    tr.appendChild(td1);tr.appendChild(td2);t1.appendChild(tr);
+  });
+  c1.appendChild(h1);c1.appendChild(t1);
+  var c2=document.createElement('div');c2.className='card';
+  var h2=document.createElement('p');h2.style.cssText='font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--text2);margin-bottom:10px';h2.textContent='Relative Model Cost';
+  var t2=document.createElement('table');t2.className='ct';
+  [['Haiku 4.5','bg2','~1x','Formatting, renaming, class tweaks, docs, mechanical pattern work'],
+   ['Sonnet 4.6','bb','~3x','Code writing, review, debugging, all production work'],
+   ['Opus 4.7','bp','~15x','Architecture, strategy, irreversible decisions, complex planning'],
+  ].forEach(function(m){
+    var tr=document.createElement('tr');
+    var td1=document.createElement('td');var bdg=document.createElement('span');bdg.className='bdg '+m[1];bdg.textContent=m[0];td1.appendChild(bdg);
+    var td2=document.createElement('td');td2.className='cd';td2.textContent=m[2]+' — '+m[3];
+    tr.appendChild(td1);tr.appendChild(td2);t2.appendChild(tr);
+  });
+  c2.appendChild(h2);c2.appendChild(t2);
+  left.appendChild(c1);left.appendChild(c2);
+  var right=document.createElement('div');
+  var c3=document.createElement('div');c3.className='card';c3.style.marginBottom='16px';
+  var h3=document.createElement('p');h3.style.cssText='font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--text2);margin-bottom:12px';h3.textContent='Context Window Usage Zones';
+  c3.appendChild(h3);
+  [['0-70%','Normal','var(--green)',70,'Full features available. All task sizes fine.'],
+   ['70-90%','Caution','var(--yellow)',90,'Avoid large refactors, multi-file features. Prefer single-file edits and simple fixes.'],
+   ['90-100%','Compact Now','var(--red)',100,'Use strategic-compact or /clear. Spawn a subagent for the next logical task.'],
+  ].forEach(function(z){
+    var w=document.createElement('div');w.style.marginBottom='16px';
+    var lbl=document.createElement('div');lbl.style.cssText='font-size:12px;font-weight:600;color:'+z[2]+';margin-bottom:4px';lbl.textContent=z[0]+' — '+z[1];
+    var m=document.createElement('div');m.className='tm';
+    var f=document.createElement('div');f.className='tf';f.style.cssText='width:'+z[3]+'%;background:'+z[2];
+    m.appendChild(f);
+    var d=document.createElement('p');d.style.cssText='font-size:12px;color:var(--text2)';d.textContent=z[4];
+    w.appendChild(lbl);w.appendChild(m);w.appendChild(d);c3.appendChild(w);
+  });
+  var c4=document.createElement('div');c4.className='card';
+  var h4=document.createElement('p');h4.style.cssText='font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--text2);margin-bottom:10px';h4.textContent='Context Window Rules';
+  var ul=document.createElement('ul');ul.style.cssText='padding-left:16px;font-size:12px;color:var(--text2);line-height:2';
+  ['Keep system prompts under 10% of window so there is room for retrieved context',
+   'Put stable content first (system prompt, tool defs) for KV cache hits',
+   'Never insert dynamic content before the stable prefix — it invalidates the cache',
+   'Anthropic prefix caching: cached input tokens ~10-12x cheaper than uncached',
+   'Structure prompts so important instructions appear first AND last (primacy + recency)',
+   'At 70%: avoid large refactors and multi-file features',
+   'At 90%: compact or clear, spawn subagent for new logical task',
+   'Never assume model remembers anything outside the current window',
+  ].forEach(function(txt){var li=document.createElement('li');li.textContent=txt;ul.appendChild(li);});
+  c4.appendChild(h4);c4.appendChild(ul);
+  right.appendChild(c3);right.appendChild(c4);
+  outer.appendChild(left);outer.appendChild(right);
+  c.appendChild(outer);
+}
+
+function renderModels(){
+  var c=document.getElementById('models-container');
+  var note=document.createElement('div');note.className='cl y';note.style.marginBottom='20px';
+  var nt=document.createElement('div');nt.className='ct2';nt.textContent='Judgment-Depth Rule';
+  var np=document.createElement('p');np.textContent='Match the model to the depth of judgment required, not the length of output. Decision affects architecture, data shape, user trust, or money = Opus. Writing, reviewing, or debugging production code = Sonnet (default). Formatting, tweaking classes, renaming, paraphrasing = Haiku.';
+  note.appendChild(nt);note.appendChild(np);c.appendChild(note);
+  var grid=document.createElement('div');grid.className='g3';
+  var models=[
+    {name:'Opus 4.7',color:'var(--purple)',sub:'Deepest reasoning · Slowest · ~15x cost',tasks:[
+      ['New feature / refactor planning','planner agent'],
+      ['System design, architectural decisions','architect agent'],
+      ['Marketing strategy, pricing, growth','market-strategy agent'],
+      ['Complex debugging with unclear symptoms','main thread + /model opus'],
+      ['Pre-mortem / cross-audit (auth, payments, migrations)','main thread + /model opus'],
+      ['Multi-channel communication triage','chief-of-staff agent'],
+    ]},
+    {name:'Sonnet 4.6',color:'var(--accent)',sub:'Best coding model · Default workhorse · ~3x cost',tasks:[
+      ['After writing any code (always)','code-reviewer agent'],
+      ['New feature, bug fix — TDD','tdd-guide agent'],
+      ['TypeScript errors, type-safety review','typescript-reviewer agent'],
+      ['Security, auth, payments, secrets','security-reviewer agent'],
+      ['Build errors, TypeScript compile failures','build-error-resolver agent'],
+      ['E2E test runs, flake triage','e2e-runner agent'],
+      ['Dead code cleanup, consolidation','refactor-cleaner agent'],
+      ['Database schema, query optimization','database-reviewer agent'],
+      ['Next.js 15 App Router work','nextjs-app-router agent'],
+      ['Next.js Server Components / Actions','nextjs-server-components agent'],
+      ['Next.js debugging, performance, security','nextjs-debugging / nextjs-security'],
+      ['Legacy to shadcn/ui migration','migration-expert agent'],
+      ['Data tables, charts, visualizations','data-display-expert agent'],
+      ['Design system setup, tokens','design-system-architect agent'],
+      ['SEO + technical marketing audit','market-technical agent'],
+      ['CRO analysis, conversion funnel','market-conversion agent'],
+      ['Competitive research','market-competitive agent'],
+      ['Docs lookup via Context7','docs-lookup agent'],
+    ]},
+    {name:'Haiku 4.5',color:'var(--green)',sub:'Fast · 90% of Sonnet for narrow tasks · ~1x cost',tasks:[
+      ['Building shadcn/ui components','component-builder agent'],
+      ['Tailwind class optimization','tailwind-optimizer agent'],
+      ['Responsive design breakpoints','responsive-design-specialist agent'],
+      ['Accessibility audit (WCAG 2.1 AA)','accessibility-auditor agent'],
+      ['Animation / motion work','animation-specialist agent'],
+      ['Radix UI primitive questions','radix-expert agent'],
+      ['Theme / dark mode / CSS variables','theme-designer agent'],
+      ['Documentation updates, codemaps','doc-updater agent'],
+      ['Tailwind performance, bundle purging','performance-optimizer agent'],
+      ['Copy/messaging quality check','market-content agent'],
+      ['Form + Zod + React Hook Form','form-specialist agent'],
+      ['Anomaly monitoring (Bloom)','bloom-anomaly-watcher agent'],
+    ]},
+  ];
+  models.forEach(function(m){
+    var card=document.createElement('div');card.className='card';card.style.borderTop='2px solid '+m.color;
+    var nm=document.createElement('p');nm.style.cssText='font-weight:600;font-size:15px;color:'+m.color+';margin-bottom:2px';nm.textContent=m.name;
+    var sb=document.createElement('p');sb.style.cssText='font-size:11px;color:var(--text3);margin-bottom:12px';sb.textContent=m.sub;
+    var tbl=document.createElement('table');tbl.className='mt';
+    var thead=document.createElement('thead');var htr=document.createElement('tr');
+    ['Task','Agent'].forEach(function(t){var th=document.createElement('th');th.textContent=t;htr.appendChild(th);});
+    thead.appendChild(htr);tbl.appendChild(thead);
+    var tbody=document.createElement('tbody');
+    m.tasks.forEach(function(t){
+      var tr=document.createElement('tr');
+      var td1=document.createElement('td');td1.textContent=t[0];
+      var td2=document.createElement('td');var code=document.createElement('code');code.style.cssText='font-size:11px;color:'+m.color;code.textContent=t[1];td2.appendChild(code);
+      tr.appendChild(td1);tr.appendChild(td2);tbody.appendChild(tr);
+    });
+    tbl.appendChild(tbody);card.appendChild(nm);card.appendChild(sb);card.appendChild(tbl);
+    grid.appendChild(card);
+  });
+  c.appendChild(grid);
+}
+
+var PALETTE=['#58a6ff','#56d364','#e3b341','#f85149','#bc8cff','#ffa657','#f778ba','#79c0ff','#7ee787','#ffb97b','#ff7b72','#d2a8ff','#89dceb','#a6e3a1','#cba6f7','#f38ba8','#fab387','#f9e2af','#94e2d5','#eba0ac'];
+var cmap={};var ci=0;
+function gc(cat){if(!cmap[cat]){cmap[cat]=PALETTE[ci%PALETTE.length];ci++;}return cmap[cat];}
+
+function renderCatalog(){
+  var filters=document.getElementById('cfs');
+  var tbody=document.getElementById('ctbd');
+  var allBtn=document.createElement('button');allBtn.className='fb active';allBtn.setAttribute('data-cat','all');allBtn.textContent='All';
+  filters.appendChild(allBtn);
+  SKILLS.forEach(function(s){
+    var col=gc(s.cat);
+    var btn=document.createElement('button');btn.className='fb';btn.setAttribute('data-cat',s.cat);btn.textContent=s.cat;
+    filters.appendChild(btn);
+    s.items.forEach(function(item){
+      var tr=document.createElement('tr');
+      tr.setAttribute('data-cat',s.cat);
+      tr.setAttribute('data-name',item[0].toLowerCase());
+      tr.setAttribute('data-desc',item[1].toLowerCase());
+      var td1=document.createElement('td');var div=document.createElement('div');div.className='cc';
+      var code=document.createElement('code');code.className='cm';code.textContent=item[0];
+      var btn2=document.createElement('button');btn2.className='cb';btn2.setAttribute('data-copy',item[0]);btn2.textContent='copy';
+      div.appendChild(code);div.appendChild(btn2);td1.appendChild(div);
+      var td2=document.createElement('td');td2.className='cd';td2.textContent=item[1];
+      var td3=document.createElement('td');var lbl=document.createElement('span');lbl.className='cl2';
+      lbl.style.cssText='color:'+col+';border-color:'+col+'40;background:'+col+'18';lbl.textContent=s.cat;
+      td3.appendChild(lbl);tr.appendChild(td1);tr.appendChild(td2);tr.appendChild(td3);
+      tbody.appendChild(tr);
+    });
+  });
+  filters.addEventListener('click',function(e){
+    var b=e.target.closest('.fb');if(!b)return;
+    filters.querySelectorAll('.fb').forEach(function(x){x.classList.remove('active');});
+    b.classList.add('active');activeCat=b.getAttribute('data-cat');applyFilters();
+  });
+}
+
+var currentQ='';var activeCat='all';
+function applyFilters(){
+  var q=currentQ.toLowerCase().trim();
+  document.querySelectorAll('.ss').forEach(function(sec){
+    var any=false;
+    sec.querySelectorAll('.sr').forEach(function(row){
+      var match=!q||((row.getAttribute('data-name')||'')+(row.getAttribute('data-desc')||'')).includes(q);
+      row.classList.toggle('sh2',!match);if(match)any=true;
+    });
+    sec.classList.toggle('sh2',!any);
+  });
+  var vis=0;
+  document.querySelectorAll('#ctbd tr').forEach(function(row){
+    var mc=activeCat==='all'||row.getAttribute('data-cat')===activeCat;
+    var mq=!q||((row.getAttribute('data-name')||'')+(row.getAttribute('data-desc')||'')).includes(q);
+    var show=mc&&mq;row.classList.toggle('hr',!show);if(show)vis++;
+  });
+  document.getElementById('cnr').classList.toggle('h',vis>0);
+}
+
+var si=document.getElementById('search');var scb=document.getElementById('sc');
+si.addEventListener('input',function(){currentQ=si.value;scb.classList.toggle('v',currentQ.length>0);applyFilters();});
+si.addEventListener('keydown',function(e){if(e.key==='Escape'){si.value='';currentQ='';scb.classList.remove('v');applyFilters();}});
+scb.addEventListener('click',function(){si.value='';currentQ='';scb.classList.remove('v');applyFilters();si.focus();});
+
+document.querySelectorAll('.tab').forEach(function(tab){
+  tab.addEventListener('click',function(){
+    document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
+    document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('active');});
+    tab.classList.add('active');
+    document.getElementById('tab-'+tab.getAttribute('data-tab')).classList.add('active');
+  });
+});
+
+document.addEventListener('click',function(e){
+  var btn=e.target.closest('.cb[data-copy]');if(!btn)return;
+  var text=btn.getAttribute('data-copy');
+  try{navigator.clipboard.writeText(text);}catch(x){var ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);}
+  var orig=btn.textContent;btn.textContent='copied!';btn.classList.add('ok');
+  setTimeout(function(){btn.textContent=orig;btn.classList.remove('ok');},1200);
+});
+
+renderSkills();
+renderCards(PROMPTS,'prompts-container');
+renderCards(PRECISION,'precision-container');
+renderTokens();
+renderModels();
+renderCatalog();
+</script>
+</body>
+</html>
