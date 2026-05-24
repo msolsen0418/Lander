@@ -11,26 +11,26 @@ import json
 import re
 import time
 import logging
+import threading
 from urllib.parse import quote
 from sources.session import make_proxy_session
 
 logger = logging.getLogger(__name__)
 
 BASE = "https://www.redfin.com"
-_session = None
+_local = threading.local()
 
 
 def _get_session():
-    global _session
-    if _session is None:
-        _session = make_proxy_session()
-        _session.headers.update(
+    if not hasattr(_local, "session"):
+        _local.session = make_proxy_session()
+        _local.session.headers.update(
             {
                 "Referer": "https://www.redfin.com/",
                 "X-Requested-With": "XMLHttpRequest",
             }
         )
-    return _session
+    return _local.session
 
 
 def get_estimate(address: str, city: str = "", state: str = "FL", zip_code: str = "") -> dict:

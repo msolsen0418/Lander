@@ -95,22 +95,35 @@ def run_full_scrape(max_counties: int = None):
         logger.info("FloridaPublicNotices: %d listings", len(fpn_listings))
         logger.info("Combined total: %d listings", len(listings))
 
-        property_ids = []
-        for listing in listings:
-            try:
-                pid = db.upsert_property(listing)
-                property_ids.append((pid, listing))
-            except Exception as exc:
-                logger.warning("Failed to save listing %s: %s", listing.get("address"), exc)
+        try:
+            property_ids = db.upsert_properties_batch(listings)
+        except Exception as exc:
+            logger.error("Batch property upsert failed: %s", exc)
+            property_ids = []
+            for listing in listings:
+                try:
+                    pid = db.upsert_property(listing)
+                    property_ids.append((pid, listing))
+                except Exception as e:
+                    logger.warning("Failed to save listing %s: %s", listing.get("address"), e)
 
         # ── Phase 2: Valuations ────────────────────────────────────────────
         logger.info("Phase 2: Fetching valuations for %d properties", len(property_ids))
         _set_state(phase="valuations", done=0, total=len(property_ids))
 
-        for i, (pid, listing) in enumerate(property_ids):
-            _set_state(current=listing.get("address", ""), done=i, total=len(property_ids))
+        enriched = [0]
+        enrich_lock = threading.Lock()
+
+        def _enrich_one(args):
+            pid, listing = args
             _enrich_property(pid, listing)
-            time.sleep(0.5)  # be polite
+            with enrich_lock:
+                enriched[0] += 1
+                _set_state(current=listing.get("address", ""), done=enriched[0],
+                           total=len(property_ids))
+
+        with ThreadPoolExecutor(max_workers=5) as executor:
+            list(executor.map(_enrich_one, property_ids))
 
         _set_state(phase="idle", running=False, current="", done=len(property_ids),
                    total=len(property_ids), last_completed=time.time())

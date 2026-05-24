@@ -14,7 +14,8 @@ Falls back gracefully if Playwright is not installed (it is not needed).
 import re
 import time
 import logging
-from datetime import datetime, timedelta
+import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from bs4 import BeautifulSoup
 from .session import make_direct_session
 
@@ -92,6 +93,7 @@ def scrape(max_counties: int = None, progress_cb=None) -> list[dict]:
     Scrape upcoming auction listings from Florida county RealForeclose sites.
 
     Uses the site's JSON AJAX endpoint directly — no browser required.
+    Counties are scraped in parallel (12 concurrent workers).
 
     Args:
         max_counties: Limit number of county/type combinations (for testing).
@@ -99,28 +101,40 @@ def scrape(max_counties: int = None, progress_cb=None) -> list[dict]:
     Returns:
         List of property dicts ready for database.upsert_property().
     """
-    session = make_direct_session()
+    counties = _FLORIDA_COUNTIES[:max_counties] if max_counties else _FLORIDA_COUNTIES
     all_listings: list[dict] = []
     seen: set[str] = set()
+    lock = threading.Lock()
+    completed = [0]
 
-    counties = _FLORIDA_COUNTIES
-    if max_counties:
-        counties = counties[:max_counties]
-
-    for i, (subdomain, county_name, auction_type) in enumerate(counties):
-        if progress_cb:
-            progress_cb(f"{county_name} ({auction_type})", i, len(counties))
+    def scrape_one(entry):
+        subdomain, county_name, auction_type = entry
+        session = make_direct_session()
         try:
             listings = _scrape_county(session, subdomain, county_name, auction_type)
-            for lst in listings:
-                key = lst["case_number"]
-                if key not in seen:
-                    seen.add(key)
-                    all_listings.append(lst)
             logger.info("RealForeclose %s %s: %d listings", county_name, auction_type, len(listings))
+            return listings
         except Exception as exc:
             logger.warning("RealForeclose %s %s failed: %s", county_name, auction_type, exc)
-        time.sleep(0.5)
+            return []
+
+    with ThreadPoolExecutor(max_workers=12) as executor:
+        futures = {executor.submit(scrape_one, entry): entry for entry in counties}
+        for future in as_completed(futures):
+            _, county_name, auction_type = futures[future]
+            with lock:
+                completed[0] += 1
+                if progress_cb:
+                    progress_cb(f"{county_name} ({auction_type})", completed[0], len(counties))
+            try:
+                for lst in future.result():
+                    key = lst["case_number"]
+                    with lock:
+                        if key not in seen:
+                            seen.add(key)
+                            all_listings.append(lst)
+            except Exception as exc:
+                logger.warning("RealForeclose result error (%s %s): %s", county_name, auction_type, exc)
 
     if progress_cb:
         progress_cb("Done", len(counties), len(counties))

@@ -19,6 +19,7 @@ import scraper
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
 
 app = Flask(__name__)
+db.init_db()
 app.secret_key = os.getenv("SECRET_KEY", os.urandom(32))
 app.permanent_session_lifetime = timedelta(days=30)
 
@@ -31,8 +32,6 @@ _PUBLIC_PATHS = {"/health", "/login", "/sw.js"}
 
 @app.before_request
 def gate():
-    db.init_db()
-
     # Always allow public paths and static assets
     if request.path in _PUBLIC_PATHS or request.path.startswith("/static/"):
         return
