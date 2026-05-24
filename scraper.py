@@ -12,6 +12,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import database as db
 from sources import realforeclose, floridapublicnotices, clerkauction
+from sources.session import has_residential_proxy
 from valuations import zillow, redfin, county_appraiser
 
 logger = logging.getLogger(__name__)
@@ -107,7 +108,18 @@ def run_full_scrape(max_counties: int = None):
                 except Exception as e:
                     logger.warning("Failed to save listing %s: %s", listing.get("address"), e)
 
-        # ── Phase 2: Valuations ──────────────────────────────────────────────────
+        # ── Phase 2: Valuations ────────────────────────────────────────────
+        if not has_residential_proxy():
+            logger.info(
+                "Skipping valuations — no residential proxy configured. "
+                "Set SMARTPROXY_USER + SMARTPROXY_PASS in Railway env vars to enable."
+            )
+            _set_state(phase="idle", running=False, current="", done=len(property_ids),
+                       total=len(property_ids), last_completed=time.time())
+            logger.info("Scrape complete (listings only — no valuations).")
+            return
+
+
         logger.info("Phase 2: Fetching valuations for %d properties", len(property_ids))
         _set_state(phase="valuations", done=0, total=len(property_ids))
 
