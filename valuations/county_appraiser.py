@@ -1,19 +1,19 @@
 """
 County Property Appraiser assessed value lookups for Florida counties.
 
-Two modes:
-  - ATTOM_API_KEY env var set → uses Attom Data Solutions API (free 100 req/month
-    trial at attomdata.com). Returns both assessed value and AVM estimate.
-  - HTTP_PROXY env var set → routes requests through a residential proxy so that
-    county GIS/appraiser sites are reachable from Railway's datacenter IPs.
-  - Neither set → returns empty results (county sites block Railway IPs directly).
+Uses each county's public ArcGIS parcel service directly — no proxy needed
+for the Esri-cloud-hosted endpoints (services.arcgis.com). County-hosted
+GIS servers may or may not be reachable from Railway IPs.
+
+Set ATTOM_API_KEY for full coverage via the Attom Data API (free 100 req/month
+trial at attomdata.com).
 """
 
 import os
 import re
 import logging
 from urllib.parse import quote, urlencode
-from sources.session import make_direct_session, make_proxy_session
+from sources.session import make_direct_session
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +34,7 @@ _ARCGIS = {
     "Lee":          ("https://leepa.org/arcgis/rest/services/ParcelSearch/MapServer/0", "SITE_ADDR"),
     "Leon":         ("https://maps.leonpa.org/arcgis/rest/services/Parcels/Parcels/FeatureServer/0", "SITE_ADDR"),
     "Manatee":      ("https://gis.manateecountyfl.gov/arcgis/rest/services/Parcels/FeatureServer/0", "SITE_ADDR"),
-    "Marion":       ("https://gis.marioncountyfl.org/arcgis/rest/services/Parcels/Parcels/MapServer/0", "SITEADDRESS"),
+    "Marion":       ("https://www.marionfl.org/arcgis/rest/services/Parcels/Parcels/MapServer/0", "SITEADDRESS"),
     "Martin":       ("https://maps.martin.fl.us/arcgis/rest/services/Property/Parcels/MapServer/0", "SITEADDRESS"),
     "Miami-Dade":   ("https://services1.arcgis.com/LVRL6VR0u9QHEFjV/arcgis/rest/services/MIAMIDADE_Parcels/FeatureServer/0", "SITE_ADDR"),
     "Orange":       ("https://gis.ocpafl.org/arcgis/rest/services/Parcels/Parcels/FeatureServer/0", "SITEADDRESS"),
@@ -43,7 +43,6 @@ _ARCGIS = {
     "Pinellas":     ("https://gis.pcpao.gov/arcgis/rest/services/Parcels/Parcels/MapServer/0", "SITEADDRESS"),
     "Polk":         ("https://gis.polkpa.org/arcgis/rest/services/Parcels/Parcels/MapServer/0", "SITE_ADDR"),
     "Sarasota":     ("https://services1.arcgis.com/mStSlIE5FrkXI38M/arcgis/rest/services/Parcels/FeatureServer/0", "SITEADDRESS"),
-    "St. Lucie":    ("https://gis.stlucieco.gov/arcgis/rest/services/Parcels/Parcels/MapServer/0", "SITEADDRESS"),
     "Volusia":      ("https://gis.volusia.org/arcgis/rest/services/Parcels/Parcels/FeatureServer/0", "SITE_ADDR"),
 }
 
@@ -103,7 +102,7 @@ def _attom_lookup(address: str, city: str, county: str, zip_code: str) -> dict:
 
 
 def _arcgis_lookup(county: str, address: str) -> dict:
-    """Query county ArcGIS parcel service. Tries direct first; falls back to proxy."""
+    """Query county ArcGIS parcel service directly (no proxy — government data)."""
     base, addr_field = _ARCGIS[county]
     addr_upper = address.upper().strip()
     where = f"UPPER({addr_field}) LIKE '{addr_upper}%'"
@@ -111,21 +110,16 @@ def _arcgis_lookup(county: str, address: str) -> dict:
                         "resultRecordCount": 3, "f": "json"})
     query_url = f"{base}/query?{params}"
 
-    for session in (make_direct_session(), make_proxy_session()):
-        try:
-            resp = session.get(query_url, timeout=20)
-            resp.raise_for_status()
-            data = resp.json()
-            features = data.get("features", [])
-            if not features:
-                return {"estimated_value": None, "detail_url": None, "raw": {}}
-            attrs = features[0].get("attributes", {})
-            value = _extract_value(attrs)
-            return {"estimated_value": value, "detail_url": base if value else None, "raw": attrs}
-        except Exception as exc:
-            logger.debug("ArcGIS direct attempt failed for %s: %s", county, exc)
-
-    return {"estimated_value": None, "detail_url": None, "raw": {}}
+    session = make_direct_session()
+    resp = session.get(query_url, timeout=20)
+    resp.raise_for_status()
+    data = resp.json()
+    features = data.get("features", [])
+    if not features:
+        return {"estimated_value": None, "detail_url": None, "raw": {}}
+    attrs = features[0].get("attributes", {})
+    value = _extract_value(attrs)
+    return {"estimated_value": value, "detail_url": base if value else None, "raw": attrs}
 
 
 def _extract_value(attrs: dict) -> float | None:
