@@ -63,7 +63,9 @@ def run_full_scrape(max_counties: int = None):
             _set_state(current=county_name, done=done, total=total)
 
         # RealForeclose: try Playwright browser first (bypasses bot detection),
-        # fall back to requests-based scraper if Playwright is unavailable.
+        # fall back to requests-based scraper, then give up gracefully so
+        # other sources (ClerkAuction, FloridaPublicNotices) still run.
+        listings = []
         try:
             from sources import realforeclose_pw
             if realforeclose_pw.is_available():
@@ -73,9 +75,12 @@ def run_full_scrape(max_counties: int = None):
             else:
                 raise RuntimeError("playwright not installed")
         except Exception as pw_exc:
-            logger.warning("Playwright unavailable (%s), falling back to requests", pw_exc)
-            _set_state(current="Connecting to RealForeclose.com...")
-            listings = realforeclose.scrape(max_counties=max_counties, progress_cb=progress_cb)
+            logger.warning("Playwright scraper failed (%s), trying requests fallback", pw_exc)
+            try:
+                _set_state(current="Connecting to RealForeclose.com (requests)...")
+                listings = realforeclose.scrape(max_counties=max_counties, progress_cb=progress_cb)
+            except Exception as req_exc:
+                logger.error("RealForeclose requests fallback also failed: %s", req_exc)
         logger.info("RealForeclose: %d listings", len(listings))
 
         # ClerkAuction counties (Palm Beach, St. Lucie, etc.)
