@@ -7,6 +7,7 @@ blocks AWS datacenter ranges).  Sign up free at https://www.scraperapi.com
 """
 
 import os
+import ssl
 import random
 import urllib3
 import requests
@@ -35,17 +36,33 @@ _PROFILES = [
 ]
 
 
+def _no_verify_ctx() -> ssl.SSLContext:
+    """SSL context with cert verification disabled — compatible with all Python/urllib3 versions.
+    check_hostname must be cleared before verify_mode per Python ssl module rules."""
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False      # must come before verify_mode
+    ctx.verify_mode = ssl.CERT_NONE
+    return ctx
+
+
 class _NoSSLAdapter(HTTPAdapter):
-    """Disables SSL certificate verification at the urllib3 pool level."""
+    """HTTPAdapter that disables SSL verification via ssl_context.
+
+    Uses ssl_context (supported by urllib3 1.26+ and 2.x) rather than the
+    deprecated cert_reqs string kwarg which silently fails on urllib3 2.x.
+    """
 
     def init_poolmanager(self, connections, maxsize, block=False, **kw):
         self.poolmanager = urllib3.PoolManager(
             num_pools=connections,
             maxsize=maxsize,
             block=block,
-            cert_reqs="CERT_NONE",
-            assert_hostname=False,
+            ssl_context=_no_verify_ctx(),
         )
+
+    def proxy_manager_for(self, proxy, **proxy_kwargs):
+        proxy_kwargs.setdefault("ssl_context", _no_verify_ctx())
+        return super().proxy_manager_for(proxy, **proxy_kwargs)
 
 
 def make_session() -> requests.Session:
