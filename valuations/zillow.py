@@ -14,21 +14,20 @@ import json
 import re
 import time
 import logging
+import threading
 from urllib.parse import quote
 from sources.session import make_proxy_session
 
 logger = logging.getLogger(__name__)
 
-_session = None
+_local = threading.local()
 
 
 def _get_session():
-    global _session
-    if _session is None:
-        _session = make_proxy_session(sticky=True)
-        # Zillow expects a referer
-        _session.headers["Referer"] = "https://www.zillow.com/"
-    return _session
+    if not hasattr(_local, "session"):
+        _local.session = make_proxy_session(sticky=True)
+        _local.session.headers["Referer"] = "https://www.zillow.com/"
+    return _local.session
 
 
 def get_zestimate(address: str, city: str = "", state: str = "FL", zip_code: str = "") -> dict:

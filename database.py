@@ -56,6 +56,7 @@ def get_db():
 
 def init_db():
     with get_db() as conn:
+        conn.execute("PRAGMA journal_mode=WAL")
         conn.executescript(SCHEMA)
 
 
@@ -83,6 +84,37 @@ def upsert_property(prop: dict) -> int:
             (prop["case_number"], prop["source"]),
         ).fetchone()
         return row["id"]
+
+
+def upsert_properties_batch(props: list[dict]) -> list[tuple[int, dict]]:
+    """Insert/update a list of properties in one transaction. Returns [(id, prop), ...]."""
+    result = []
+    with get_db() as conn:
+        for prop in props:
+            conn.execute(
+                """
+                INSERT INTO properties (address, city, county, state, zip,
+                    auction_type, opening_bid, sale_date, case_number, source_url, source)
+                VALUES (:address, :city, :county, :state, :zip,
+                    :auction_type, :opening_bid, :sale_date, :case_number, :source_url, :source)
+                ON CONFLICT(case_number, source) DO UPDATE SET
+                    address = excluded.address,
+                    city = excluded.city,
+                    opening_bid = excluded.opening_bid,
+                    sale_date = excluded.sale_date,
+                    source_url = excluded.source_url,
+                    scraped_at = unixepoch()
+                """,
+                prop,
+            )
+        for prop in props:
+            row = conn.execute(
+                "SELECT id FROM properties WHERE case_number = ? AND source = ?",
+                (prop["case_number"], prop["source"]),
+            ).fetchone()
+            if row:
+                result.append((row["id"], prop))
+    return result
 
 
 def upsert_valuation(property_id: int, source: str, estimated_value, detail_url: str = None, raw_data: dict = None):
@@ -119,23 +151,59 @@ def get_stale_valuation_property_ids(source: str) -> list[int]:
 
 def get_all_properties_with_valuations() -> list[dict]:
     with get_db() as conn:
-        props = conn.execute(
-            "SELECT * FROM properties ORDER BY sale_date ASC, county ASC"
+        rows = conn.execute(
+            """
+            SELECT
+                p.id, p.address, p.city, p.county, p.state, p.zip,
+                p.auction_type, p.opening_bid, p.sale_date, p.case_number,
+                p.source_url, p.source, p.scraped_at,
+                v.source AS val_source, v.estimated_value, v.detail_url
+            FROM properties p
+            LEFT JOIN valuations v ON v.property_id = p.id
+            ORDER BY p.sale_date ASC, p.county ASC, p.id ASC
+            """
         ).fetchall()
 
-        result = []
-        for prop in props:
-            p = dict(prop)
-            vals = conn.execute(
-                "SELECT source, estimated_value, detail_url FROM valuations WHERE property_id = ?",
-                (p["id"],),
-            ).fetchall()
-            p["valuations"] = {v["source"]: {"value": v["estimated_value"], "url": v["detail_url"]} for v in vals}
+        properties: dict[int, dict] = {}
+        for row in rows:
+            pid = row["id"]
+            if pid not in properties:
+                properties[pid] = {
+                    "id": row["id"],
+                    "address": row["address"],
+                    "city": row["city"],
+                    "county": row["county"],
+                    "state": row["state"],
+                    "zip": row["zip"],
+                    "auction_type": row["auction_type"],
+                    "opening_bid": row["opening_bid"],
+                    "sale_date": row["sale_date"],
+                    "case_number": row["case_number"],
+                    "source_url": row["source_url"],
+                    "source": row["source"],
+                    "scraped_at": row["scraped_at"],
+                    "valuations": {},
+                }
+            if row["val_source"]:
+                properties[pid]["valuations"][row["val_source"]] = {
+                    "value": row["estimated_value"],
+                    "url": row["detail_url"],
+                }
 
-            estimates = [v["estimated_value"] for v in vals if v["estimated_value"]]
+        result = []
+        for p in properties.values():
+            estimates = [v["value"] for v in p["valuations"].values() if v["value"]]
             p["best_estimate"] = max(estimates) if estimates else None
-            p["equity_gap"] = (p["best_estimate"] - p["opening_bid"]) if (p["best_estimate"] and p["opening_bid"]) else None
-            p["equity_gap_pct"] = (p["equity_gap"] / p["opening_bid"] * 100) if (p["equity_gap"] and p["opening_bid"]) else None
+            p["equity_gap"] = (
+                (p["best_estimate"] - p["opening_bid"])
+                if (p["best_estimate"] and p["opening_bid"])
+                else None
+            )
+            p["equity_gap_pct"] = (
+                (p["equity_gap"] / p["opening_bid"] * 100)
+                if (p["equity_gap"] and p["opening_bid"])
+                else None
+            )
             result.append(p)
 
         return result

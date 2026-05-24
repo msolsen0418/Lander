@@ -19,34 +19,38 @@ import scraper
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
 
 app = Flask(__name__)
+db.init_db()
 app.secret_key = os.getenv("SECRET_KEY", os.urandom(32))
 app.permanent_session_lifetime = timedelta(days=30)
 
 _AUTH_USER = os.getenv("APP_USERNAME", "")
 _AUTH_PASS = os.getenv("APP_PASSWORD", "")
 
+# Paths that never require auth
 _PUBLIC_PATHS = {"/health", "/login", "/sw.js"}
 
 
 @app.before_request
 def gate():
-    db.init_db()
-
+    # Always allow public paths and static assets
     if request.path in _PUBLIC_PATHS or request.path.startswith("/static/"):
         return
 
+    # No auth configured — open access
     if not (_AUTH_USER and _AUTH_PASS):
         return
 
+    # Session cookie present and valid
     if session.get("authenticated"):
         return
 
+    # API calls get 401 JSON; page requests get the login form
     if request.path.startswith("/api/"):
         return jsonify({"error": "unauthorized"}), 401
     return redirect(url_for("login"))
 
 
-# ── Auth routes ───────────────────────────────────────────────────────────────
+# ── Auth routes ──────────────────────────────────────────────────────────────────
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -66,7 +70,7 @@ def logout():
     return redirect(url_for("login"))
 
 
-# ── Pages ─────────────────────────────────────────────────────────────────────
+# ── Pages ───────────────────────────────────────────────────────────────────────
 
 @app.route("/")
 def dashboard():
@@ -86,7 +90,7 @@ def service_worker():
     return resp
 
 
-# ── API ───────────────────────────────────────────────────────────────────────
+# ── API ────────────────────────────────────────────────────────────────────────────
 
 @app.route("/api/properties")
 def api_properties():
@@ -162,7 +166,7 @@ def api_scrape_stream():
     )
 
 
-# ── Scheduled daily scrape ────────────────────────────────────────────────────
+# ── Scheduled daily scrape ─────────────────────────────────────────────────────────
 
 def _scheduled_scrape():
     if not scraper.get_state()["running"]:
@@ -177,7 +181,7 @@ _scheduler.start()
 atexit.register(lambda: _scheduler.shutdown(wait=False))
 
 
-# ── Entry point ───────────────────────────────────────────────────────────────
+# ── Entry point ─────────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
     db.init_db()
