@@ -77,9 +77,10 @@ class _ScraperAPISession(requests.Session):
             p = PreparedRequest()
             p.prepare_url(url, params)
             url = p.url
-        # Rewrite through ScraperAPI; residential IP routing needs more time
-        url = f"http://api.scraperapi.com?api_key={self._api_key}&url={quote(url, safe='')}"
-        kwargs["timeout"] = max(kwargs.get("timeout", 60), 60)
+        # Rewrite through ScraperAPI; render=true uses headless browser to
+        # bypass JS-based bot detection (e.g. Cloudflare challenges).
+        url = f"http://api.scraperapi.com?api_key={self._api_key}&url={quote(url, safe='')}&render=true&country_code=us"
+        kwargs["timeout"] = max(kwargs.get("timeout", 60), 90)
         return super().get(url, **kwargs)
 
 
