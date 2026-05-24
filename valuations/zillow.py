@@ -25,7 +25,7 @@ _session = None
 def _get_session():
     global _session
     if _session is None:
-        _session = make_proxy_session()
+        _session = make_proxy_session(sticky=True)
         # Zillow expects a referer
         _session.headers["Referer"] = "https://www.zillow.com/"
     return _session

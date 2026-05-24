@@ -1,26 +1,41 @@
-"""Shared session factory for listing scrapers.
+"""
+Shared HTTP session factory.
 
-Three session types:
-  make_direct_session()  — No proxy. Use for government/court sites accessible
-                           from Railway IPs (realforeclose.com county subdomains,
-                           county property appraiser sites).
+Session types
+─────────────
+make_direct_session()
+    No proxy. For government/court sites reachable from Railway IPs
+    (realforeclose.com county subdomains, county appraiser GIS APIs).
 
-  make_proxy_session()   — Residential proxy for sites that block datacenter IPs
-                           (Zillow, Redfin). Priority order:
-                             1. HTTP_PROXY env var  (any SOCKS5/HTTP proxy URL,
-                                e.g. SmartProxy: http://user:pass@gate.smartproxy.com:7000)
-                             2. SCRAPERAPI_KEY env var
-                             3. Falls back to direct (expect 403 from Zillow/Redfin)
+make_proxy_session(sticky=False)
+    Residential proxy for sites that block datacenter IPs (Zillow, Redfin,
+    county GIS portals).
 
-  make_session()         — Legacy alias for make_proxy_session(). Kept so existing
-                           callers don't break.
+    Credential priority:
+      1. SMARTPROXY_USER + SMARTPROXY_PASS  →  SmartProxy residential
+         gate.smartproxy.com:7000 (HTTP, handles HTTPS via CONNECT tunnel)
+         sticky=True appends a random session ID so multi-step lookups
+         (Zillow search → property page) use the same exit IP.
+      2. HTTP_PROXY / HTTPS_PROXY env var   →  any proxy URL
+      3. SCRAPERAPI_KEY env var             →  ScraperAPI premium
+      4. Direct (expect 403 from Zillow/Redfin from Railway datacenter IPs)
 
-Recommended proxy for Railway: SmartProxy residential ~$3.50/GB.
-Set HTTP_PROXY=http://user:pass@gate.smartproxy.com:7000 in Railway env vars.
+make_session()
+    Legacy alias for make_proxy_session().
+
+Railway setup for SmartProxy
+─────────────────────────────
+In Railway → Settings → Variables add:
+    SMARTPROXY_USER = spxxxxxxx           (your SmartProxy username)
+    SMARTPROXY_PASS = <password>
+
+That's it. Sign up at smartproxy.com — residential starts at ~$3.50/GB.
 """
 
 import os
+import re
 import ssl
+import uuid
 import random
 import logging
 import urllib3
@@ -32,8 +47,30 @@ logger = logging.getLogger(__name__)
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
+# ── Credential resolution (read once at import time) ──────────────────────────
+_SMARTPROXY_USER = os.getenv("SMARTPROXY_USER", "")
+_SMARTPROXY_PASS = os.getenv("SMARTPROXY_PASS", "")
+_SMARTPROXY_HOST = "gate.smartproxy.com"
+_SMARTPROXY_PORT = 7000          # HTTP proxy; handles HTTPS via CONNECT tunnel
+_SMARTPROXY_PORT_STICKY = 7002   # sticky endpoint (same IP per session ID)
+
 _SCRAPERAPI_KEY = os.getenv("SCRAPERAPI_KEY", "")
 _HTTP_PROXY = os.getenv("HTTP_PROXY", "") or os.getenv("HTTPS_PROXY", "")
+
+_HAS_SMARTPROXY = bool(_SMARTPROXY_USER and _SMARTPROXY_PASS)
+_HAS_PROXY = _HAS_SMARTPROXY or bool(_HTTP_PROXY) or bool(_SCRAPERAPI_KEY)
+
+if _HAS_SMARTPROXY:
+    logger.info("SmartProxy residential proxy configured (user=%s)", _SMARTPROXY_USER)
+elif _HTTP_PROXY:
+    logger.info("Generic HTTP proxy configured")
+elif _SCRAPERAPI_KEY:
+    logger.info("ScraperAPI proxy configured")
+else:
+    logger.info(
+        "No residential proxy configured — Zillow/Redfin/county GIS will fail. "
+        "Set SMARTPROXY_USER + SMARTPROXY_PASS in Railway env vars."
+    )
 
 _PROFILES = [
     {
@@ -53,6 +90,22 @@ _PROFILES = [
     },
 ]
 
+_BROWSER_HEADERS = {
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Accept-Encoding": "gzip, deflate, br",
+    "sec-ch-ua-mobile": "?0",
+    "Sec-Fetch-Dest": "document",
+    "Sec-Fetch-Mode": "navigate",
+    "Sec-Fetch-Site": "none",
+    "Sec-Fetch-User": "?1",
+    "Upgrade-Insecure-Requests": "1",
+    "Cache-Control": "max-age=0",
+    "Connection": "keep-alive",
+}
+
+
+# ── SSL / adapter helpers ──────────────────────────────────────────────────────
 
 def _no_verify_ctx() -> ssl.SSLContext:
     ctx = ssl.create_default_context()
@@ -71,113 +124,92 @@ class _NoSSLAdapter(HTTPAdapter):
         )
 
 
+# ── ScraperAPI session (legacy) ────────────────────────────────────────────────
+
 class _ScraperAPISession(requests.Session):
-    """Session that rewrites every GET through ScraperAPI's URL-based API.
-
-    The request to api.scraperapi.com is plain HTTP — no SSL cert issues.
-    ScraperAPI fetches the real target over HTTPS from a residential IP.
-    """
-
     def __init__(self, api_key: str):
         super().__init__()
         self._api_key = api_key
 
     def get(self, url, **kwargs):
-        # Merge any caller params into the target URL before proxying
         params = kwargs.pop("params", None)
         if params:
             p = PreparedRequest()
             p.prepare_url(url, params)
             url = p.url
-        # premium=true uses harder-to-detect proxies; country_code forces US IP
-        scraperapi_params = {
-            "api_key": self._api_key,
-            "url": url,
-            "country_code": "us",
-            "premium": "true",
-        }
+        sp = {"api_key": self._api_key, "url": url, "country_code": "us", "premium": "true"}
         kwargs["timeout"] = max(kwargs.get("timeout", 90), 90)
-        resp = super().get("http://api.scraperapi.com", params=scraperapi_params, **kwargs)
+        resp = super().get("http://api.scraperapi.com", params=sp, **kwargs)
         if not resp.ok:
-            logger.error(
-                "ScraperAPI %d for %s — body: %s",
-                resp.status_code, url, resp.text[:400],
-            )
+            logger.error("ScraperAPI %d for %s — %s", resp.status_code, url, resp.text[:300])
         return resp
 
 
-def make_proxy_session() -> requests.Session:
-    """Session that routes through a residential proxy for anti-bot sites (Zillow, Redfin).
+# ── Public session factories ───────────────────────────────────────────────────
 
-    Priority:
-      1. HTTP_PROXY / HTTPS_PROXY env var — any proxy URL works
-         e.g. SmartProxy: http://user:pass@gate.smartproxy.com:7000
-      2. SCRAPERAPI_KEY env var
-      3. Direct request (will fail for Zillow/Redfin from Railway datacenter IPs)
+def make_proxy_session(sticky: bool = False) -> requests.Session:
+    """
+    Residential proxy session for anti-bot sites.
+
+    sticky=True  →  all requests from this session share one exit IP
+                    (required for Zillow's multi-step search → page flow).
+    sticky=False →  each request may use a different IP (better for Redfin).
     """
     profile = random.choice(_PROFILES)
-
-    if _HTTP_PROXY:
-        session = requests.Session()
-        session.mount("https://", _NoSSLAdapter())
-        session.proxies = {"http": _HTTP_PROXY, "https": _HTTP_PROXY}
-    elif _SCRAPERAPI_KEY:
-        session = _ScraperAPISession(_SCRAPERAPI_KEY)
-    else:
-        session = requests.Session()
-        session.mount("https://", _NoSSLAdapter())
-
-    session.headers.update(
-        {
-            "User-Agent": profile["User-Agent"],
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
-            "Accept-Language": "en-US,en;q=0.9",
-            "Accept-Encoding": "gzip, deflate, br",
-            "sec-ch-ua": profile["sec-ch-ua"],
-            "sec-ch-ua-mobile": "?0",
-            "sec-ch-ua-platform": profile["sec-ch-ua-platform"],
-            "Sec-Fetch-Dest": "document",
-            "Sec-Fetch-Mode": "navigate",
-            "Sec-Fetch-Site": "none",
-            "Sec-Fetch-User": "?1",
-            "Upgrade-Insecure-Requests": "1",
-            "Cache-Control": "max-age=0",
-            "Connection": "keep-alive",
-        }
-    )
+    session = _build_proxy_session(sticky)
+    session.headers.update({**_BROWSER_HEADERS,
+                             "User-Agent": profile["User-Agent"],
+                             "sec-ch-ua": profile["sec-ch-ua"],
+                             "sec-ch-ua-platform": profile["sec-ch-ua-platform"]})
     return session
+
+
+def _build_proxy_session(sticky: bool) -> requests.Session:
+    if _HAS_SMARTPROXY:
+        return _smartproxy_session(sticky)
+    if _HTTP_PROXY:
+        s = requests.Session()
+        s.mount("https://", _NoSSLAdapter())
+        s.proxies = {"http": _HTTP_PROXY, "https": _HTTP_PROXY}
+        return s
+    if _SCRAPERAPI_KEY:
+        return _ScraperAPISession(_SCRAPERAPI_KEY)
+    # No proxy configured — direct (will 403 on Zillow/Redfin)
+    s = requests.Session()
+    s.mount("https://", _NoSSLAdapter())
+    return s
+
+
+def _smartproxy_session(sticky: bool) -> requests.Session:
+    """Build a requests.Session routed through SmartProxy residential."""
+    if sticky:
+        # Sticky endpoint keeps same exit IP for ~10 min per session ID.
+        session_id = uuid.uuid4().hex[:12]
+        username = f"{_SMARTPROXY_USER}-sessionid-{session_id}"
+        proxy_url = f"http://{username}:{_SMARTPROXY_PASS}@{_SMARTPROXY_HOST}:{_SMARTPROXY_PORT_STICKY}"
+    else:
+        proxy_url = f"http://{_SMARTPROXY_USER}:{_SMARTPROXY_PASS}@{_SMARTPROXY_HOST}:{_SMARTPROXY_PORT}"
+
+    s = requests.Session()
+    s.proxies = {"http": proxy_url, "https": proxy_url}
+    # SmartProxy uses a valid TLS cert on their gateway so we can verify normally.
+    # But many target sites have cert issues, so keep _NoSSLAdapter for targets.
+    s.mount("https://", _NoSSLAdapter())
+    return s
 
 
 def make_session() -> requests.Session:
-    """Legacy alias for make_proxy_session()."""
-    return make_proxy_session()
+    """Legacy alias — kept so existing callers don't break."""
+    return make_proxy_session(sticky=False)
 
 
 def make_direct_session() -> requests.Session:
-    """Direct requests session — never routes through ScraperAPI.
-
-    Use this for sites that are accessible from Railway IPs without a proxy
-    (government/court sites, SSR aggregators, etc.).
-    """
+    """Direct session, no proxy. For county auction sites and government portals."""
     profile = random.choice(_PROFILES)
-    session = requests.Session()
-    session.mount("https://", _NoSSLAdapter())
-    session.headers.update(
-        {
-            "User-Agent": profile["User-Agent"],
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
-            "Accept-Language": "en-US,en;q=0.9",
-            "Accept-Encoding": "gzip, deflate, br",
-            "sec-ch-ua": profile["sec-ch-ua"],
-            "sec-ch-ua-mobile": "?0",
-            "sec-ch-ua-platform": profile["sec-ch-ua-platform"],
-            "Sec-Fetch-Dest": "document",
-            "Sec-Fetch-Mode": "navigate",
-            "Sec-Fetch-Site": "none",
-            "Sec-Fetch-User": "?1",
-            "Upgrade-Insecure-Requests": "1",
-            "Cache-Control": "max-age=0",
-            "Connection": "keep-alive",
-        }
-    )
-    return session
+    s = requests.Session()
+    s.mount("https://", _NoSSLAdapter())
+    s.headers.update({**_BROWSER_HEADERS,
+                      "User-Agent": profile["User-Agent"],
+                      "sec-ch-ua": profile["sec-ch-ua"],
+                      "sec-ch-ua-platform": profile["sec-ch-ua-platform"]})
+    return s
