@@ -11,7 +11,7 @@ import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import database as db
-from sources import realforeclose, floridapublicnotices
+from sources import realforeclose, floridapublicnotices, clerkauction
 from valuations import zillow, redfin, county_appraiser
 
 logger = logging.getLogger(__name__)
@@ -42,7 +42,7 @@ def _set_state(**kwargs):
 def run_full_scrape(max_counties: int = None):
     """
     Full pipeline:
-      1. Scrape auction listings from RealForeclose.com + FloridaPublicNotices.com
+      1. Scrape auction listings from RealForeclose.com
       2. For each new/updated property, fetch valuations from all sources
       3. Persist everything to SQLite
 
@@ -52,19 +52,39 @@ def run_full_scrape(max_counties: int = None):
         logger.warning("Scrape already in progress — skipping")
         return
 
-    _set_state(running=True, phase="auctions", current="Connecting to RealForeclose.com...",
+    _set_state(running=True, phase="auctions", current="Starting scrape...",
                done=0, total=0, errors=[])
 
     try:
-        # ── Phase 1: Auction listings ──────────────────────────────────────
+        # ── Phase 1: Auction listings ───────────────────────────────────────────
         logger.info("Phase 1: Scraping auction listings")
 
         def progress_cb(county_name, done, total):
             _set_state(current=county_name, done=done, total=total)
 
-        listings = realforeclose.scrape(max_counties=max_counties, progress_cb=progress_cb)
+        # RealForeclose: try Playwright browser first (bypasses bot detection),
+        # fall back to requests-based scraper if Playwright is unavailable.
+        try:
+            from sources import realforeclose_pw
+            if realforeclose_pw.is_available():
+                _set_state(current="Launching Playwright browser for RealForeclose.com...")
+                logger.info("Using Playwright for RealForeclose.com")
+                listings = realforeclose_pw.scrape(max_counties=max_counties, progress_cb=progress_cb)
+            else:
+                raise RuntimeError("playwright not installed")
+        except Exception as pw_exc:
+            logger.warning("Playwright unavailable (%s), falling back to requests", pw_exc)
+            _set_state(current="Connecting to RealForeclose.com...")
+            listings = realforeclose.scrape(max_counties=max_counties, progress_cb=progress_cb)
         logger.info("RealForeclose: %d listings", len(listings))
 
+        # ClerkAuction counties (Palm Beach, St. Lucie, etc.)
+        _set_state(current="Scraping ClerkAuction counties...")
+        ca_listings = clerkauction.scrape(progress_cb=progress_cb)
+        listings.extend(ca_listings)
+        logger.info("ClerkAuction: %d listings", len(ca_listings))
+
+        # Florida public notices (legal notice aggregator)
         fpn_listings = floridapublicnotices.scrape(progress_cb=progress_cb)
         listings.extend(fpn_listings)
         logger.info("FloridaPublicNotices: %d listings", len(fpn_listings))
@@ -78,7 +98,7 @@ def run_full_scrape(max_counties: int = None):
             except Exception as exc:
                 logger.warning("Failed to save listing %s: %s", listing.get("address"), exc)
 
-        # ── Phase 2: Valuations ────────────────────────────────────────────
+        # ── Phase 2: Valuations ──────────────────────────────────────────────────
         logger.info("Phase 2: Fetching valuations for %d properties", len(property_ids))
         _set_state(phase="valuations", done=0, total=len(property_ids))
 

@@ -63,7 +63,16 @@ def _discover_counties(session) -> list[tuple]:
     resp = session.get(BASE_URL + "/", timeout=15)
     resp.raise_for_status()
     soup = BeautifulSoup(resp.text, "lxml")
+    unique = parse_county_list(soup)
+    logger.info("Discovered %d county auction queues on RealForeclose", len(unique))
+    return unique
 
+
+def parse_county_list(soup: BeautifulSoup) -> list[tuple]:
+    """Parse (county_id, county_name, auction_type) from a RealForeclose homepage soup.
+
+    Exported so the Playwright scraper can reuse it without a requests session.
+    """
     counties = []
     # The site has dropdown menus: "Tax Deed Sales" and "Foreclosure Sales"
     # Each menu item is a link like /index.cfm?zaction=COUNTY&Zmethod=PREVIEW&COUNTYID=XX
@@ -77,7 +86,6 @@ def _discover_counties(session) -> list[tuple]:
         if not county_name:
             continue
 
-        # Determine auction type from parent menu context
         parent_text = ""
         parent = link.find_parent("li")
         if parent:
@@ -95,7 +103,6 @@ def _discover_counties(session) -> list[tuple]:
 
         counties.append((county_id, county_name, auction_type))
 
-    # De-duplicate by county_id (keep first occurrence)
     seen = set()
     unique = []
     for item in counties:
@@ -103,7 +110,6 @@ def _discover_counties(session) -> list[tuple]:
             seen.add(item[0])
             unique.append(item)
 
-    logger.info("Discovered %d county auction queues on RealForeclose", len(unique))
     return unique
 
 
@@ -241,7 +247,7 @@ def _parse_row(cells: list, col: dict, county_name: str, default_type: str, coun
     }
 
 
-# ── helpers ──────────────────────────────────────────────────────────────────
+# ── helpers ────────────────────────────────────────────────────────────────────────────
 
 def _find_col(headers: list[str], candidates: list[str]) -> int | None:
     for candidate in candidates:
