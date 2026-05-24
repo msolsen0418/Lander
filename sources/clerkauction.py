@@ -1,52 +1,46 @@
 """
-Scraper for the Grant Street Group ClerkAuction platform.
+Scraper for Florida county auction sites on the RealAuction / RealForeclose platform.
 
-Several Florida counties — including Palm Beach and St. Lucie — use
-ClerkAuction instead of RealForeclose for their online foreclosure and
-tax-deed auctions.  Each county gets its own subdomain:
-  https://mypalmbeachclerk.clerkauction.com/
-  https://stlucie.clerkauction.com/
+Palm Beach and St. Lucie counties (originally targeted via clerkauction.com
+subdomains that no longer resolve) now host their auctions at:
+  https://palmbeach.realforeclose.com/
+  https://stlucie.realforeclose.com/
 
-The calendar pages are server-side rendered and require no JavaScript,
-so a plain requests session works fine.
+The auction listing data is loaded via a JSON AJAX endpoint — no Playwright needed.
 """
 
 import re
 import time
 import logging
-from datetime import datetime
-from urllib.parse import urljoin
 from bs4 import BeautifulSoup
 from .session import make_direct_session
 
 logger = logging.getLogger(__name__)
 
-# (county_name, base_url, auction_type)
+# (county_name, subdomain, auction_type)
+# These two counties were the original ClerkAuction targets.
 _COUNTIES = [
-    ("Palm Beach", "https://mypalmbeachclerk.clerkauction.com", "foreclosure"),
-    ("Palm Beach", "https://mypalmbeachclerk.clerkauction.com", "tax_deed"),
-    ("St. Lucie",  "https://stlucie.clerkauction.com",          "foreclosure"),
-    ("St. Lucie",  "https://stlucie.clerkauction.com",          "tax_deed"),
+    ("Palm Beach", "palmbeach", "foreclosure"),
+    ("Palm Beach", "palmbeach", "tax_deed"),
+    ("St. Lucie",  "stlucie",  "foreclosure"),
+    ("St. Lucie",  "stlucie",  "tax_deed"),
 ]
 
-_CALENDAR_PATHS = {
-    "foreclosure": "/calendar/foreclosures",
-    "tax_deed":    "/calendar/taxdeeds",
-}
+# How many upcoming auction dates to scrape per county/type
+_MAX_DATES = 4
 
 
 def scrape(progress_cb=None) -> list[dict]:
-    """Scrape upcoming auction listings from ClerkAuction counties."""
+    """Scrape upcoming auction listings for Palm Beach and St. Lucie counties."""
     session = make_direct_session()
     all_listings: list[dict] = []
     seen: set[str] = set()
 
-    for i, (county_name, base_url, auction_type) in enumerate(_COUNTIES):
+    for i, (county_name, subdomain, auction_type) in enumerate(_COUNTIES):
         if progress_cb:
             progress_cb(f"ClerkAuction: {county_name} ({auction_type})", i, len(_COUNTIES))
         try:
-            path = _CALENDAR_PATHS[auction_type]
-            listings = _scrape_calendar(session, base_url, path, county_name, auction_type)
+            listings = _scrape_county(session, subdomain, county_name, auction_type)
             for lst in listings:
                 key = lst["case_number"]
                 if key not in seen:
@@ -60,123 +54,176 @@ def scrape(progress_cb=None) -> list[dict]:
     return all_listings
 
 
-def _scrape_calendar(session, base_url: str, path: str, county_name: str, auction_type: str) -> list[dict]:
-    url = base_url + path
-    resp = session.get(url, timeout=20)
+# ── per-county scraping ─────────────────────────────────────────────
+
+def _scrape_county(session, subdomain: str, county_name: str, auction_type: str) -> list[dict]:
+    """Collect upcoming auction listings for one county/type via AJAX."""
+    base_url = f"https://{subdomain}.realforeclose.com"
+
+    # Load calendar page to establish session cookies and find upcoming dates
+    calendar_url = f"{base_url}/index.cfm?zaction=AUCTION&Zmethod=PREVIEW"
+    resp = session.get(calendar_url, timeout=20)
     resp.raise_for_status()
-    soup = BeautifulSoup(resp.text, "lxml")
-    return _parse_calendar(soup, base_url, county_name, auction_type)
 
+    auction_dates = _discover_auction_dates(resp.text)
+    if not auction_dates:
+        auction_dates = [None]  # try with current date context
 
-def _parse_calendar(soup: BeautifulSoup, base_url: str, county_name: str, auction_type: str) -> list[dict]:
-    listings = []
+    listings: list[dict] = []
+    for auction_date in auction_dates[:_MAX_DATES]:
+        if auction_date:
+            date_url = f"{base_url}/index.cfm?zaction=AUCTION&Zmethod=PREVIEW&AuctionDate={auction_date}"
+            session.get(date_url, timeout=20)  # set date context in session
 
-    date_blocks = soup.select("div.auction-date-group, div.sales-date, section.auction-group")
-    if not date_blocks:
-        date_blocks = [soup]
-
-    for block in date_blocks:
-        date_raw = ""
-        for hdr in block.select("h2, h3, h4, .date-header, .auction-date"):
-            t = hdr.get_text(strip=True)
-            if re.search(r"\d{1,2}/\d{1,2}/\d{4}|\w+ \d{1,2},?\s*\d{4}", t):
-                date_raw = t
-                break
-
-        rows = block.select("tr") or block.select("li.auction-item, div.auction-item, div.case-row")
-        for row in rows:
-            cells = row.find_all(["td", "th"])
-            if not cells:
-                cells = [row]
-            if len(cells) < 2:
-                continue
-
-            text_vals = [c.get_text(separator=" ", strip=True) for c in cells]
-            full_text = " ".join(text_vals)
-
-            case_number = _extract_case(full_text)
-            if not case_number:
-                continue
-
-            address_raw = _extract_address(text_vals, cells)
-            bid_raw = _extract_bid(text_vals)
-            sale_date = _parse_date(date_raw) or _parse_date(_extract_date_from_text(full_text))
-
-            detail_url = None
-            for cell in cells:
-                a = cell.find("a", href=True)
-                if a:
-                    href = a["href"]
-                    detail_url = href if href.startswith("http") else urljoin(base_url, href)
-                    break
-
-            address, city, zip_code = _split_address(address_raw)
-            if not address and not case_number:
-                continue
-
-            listings.append({
-                "address": address or full_text[:80],
-                "city": city,
-                "county": county_name,
-                "state": "FL",
-                "zip": zip_code,
-                "auction_type": auction_type,
-                "opening_bid": _parse_dollar(bid_raw),
-                "sale_date": sale_date,
-                "case_number": case_number.strip(),
-                "source_url": detail_url or base_url + _CALENDAR_PATHS[auction_type],
-                "source": "clerkauction",
-            })
+        batch = _fetch_auction_area(session, base_url, county_name, auction_type)
+        listings.extend(batch)
+        time.sleep(0.3)
 
     return listings
 
 
-# ── helpers ────────────────────────────────────────────────────────────────────────────
+def _discover_auction_dates(html: str) -> list[str]:
+    """Extract upcoming auction date strings from the calendar nav HTML."""
+    soup = BeautifulSoup(html, "lxml")
+    dates: list[str] = []
+    nav = soup.find(class_="AuctionNav_Main")
+    if not nav:
+        return dates
+    for a in nav.find_all("a", href=True):
+        m = re.search(r"AuctionDate=(\d{2}/\d{2}/\d{4})", a["href"])
+        if m:
+            d = m.group(1)
+            if d not in dates:
+                dates.append(d)
+    return dates
 
-def _extract_case(text: str) -> str:
-    m = re.search(r"\b(\d{4}[\-\s](?:CA|CC|SC|CF|TD|FC)[\-\s]\d+(?:[\-\s]\d+)?)\b", text, re.I)
+
+def _fetch_auction_area(session, base_url: str, county_name: str, auction_type: str) -> list[dict]:
+    """Call the AJAX endpoint and parse auction items from the JSON response."""
+    tx = int(time.time() * 1000)
+    ajax_url = (
+        f"{base_url}/index.cfm"
+        f"?zaction=AUCTION&Zmethod=UPDATE&FNC=LOAD&AREA=W"
+        f"&PageDir=0&doR=1&tx={tx}&bypassPage=0"
+    )
+    resp = session.get(ajax_url, timeout=20)
+    resp.raise_for_status()
+
+    try:
+        data = resp.json()
+    except Exception:
+        logger.debug("Non-JSON response from %s", ajax_url)
+        return []
+
+    raw_html = data.get("retHTML", "")
+    if not raw_html:
+        return []
+
+    decoded = _decode_rf_html(raw_html)
+    soup = BeautifulSoup(decoded, "lxml")
+    items = soup.find_all("div", class_="AUCTION_ITEM")
+
+    listings = []
+    for item in items:
+        lst = _parse_auction_item(item, base_url, county_name, auction_type)
+        if lst:
+            listings.append(lst)
+    return listings
+
+
+def _decode_rf_html(rh: str) -> str:
+    """Reverse the server-side HTML compression in the AJAX JSON response."""
+    rh = rh.replace("@A", '<div class="')
+    rh = rh.replace("@B", "</div>")
+    rh = rh.replace("@C", 'class="')
+    rh = rh.replace("@D", "<div>")
+    rh = rh.replace("@E", "AUCTION")
+    rh = rh.replace("@F", "</td><td")
+    rh = rh.replace("@G", "</td></tr>")
+    rh = rh.replace("@H", "<tr><td ")
+    rh = rh.replace("@I", "table")
+    rh = rh.replace("@J", 'p_back="NextCheck=')
+    rh = rh.replace("@K", 'style="Display:none"')
+    rh = rh.replace("@L", "/index.cfm?zaction=auction&zmethod=details&AID=")
+    return rh
+
+
+def _parse_auction_item(item, base_url: str, county_name: str, auction_type: str) -> dict | None:
+    """Extract a structured listing dict from one AUCTION_ITEM div."""
+    fields: dict[str, str] = {}
+    # Track rows so we can read the unlabeled city/state/zip row that follows
+    # the "Property Address:" row (the site leaves the label cell blank).
+    last_labeled_key = ""
+    city_zip_raw = ""
+
+    for row in item.find_all("tr"):
+        cells = row.find_all("td")
+        if len(cells) == 2:
+            label = cells[0].get_text(strip=True).rstrip(":").lower()
+            value = cells[1].get_text(strip=True)
+            if label:
+                fields[label] = value
+                last_labeled_key = label
+            elif last_labeled_key == "property address" and value:
+                # Unlabeled row immediately after address = "CITY, FL- ZIP"
+                city_zip_raw = value
+
+    case_number = fields.get("case #", "").strip()
+    if not case_number:
+        return None
+
+    address_raw = fields.get("property address", "")
+    bid_raw = fields.get("final judgment amount", "") or fields.get("opening bid", "")
+    atype_raw = fields.get("auction type", auction_type)
+
+    atype = auction_type
+    if "tax" in atype_raw.lower():
+        atype = "tax_deed"
+    elif "foreclos" in atype_raw.lower():
+        atype = "foreclosure"
+
+    aid = item.get("aid", "")
+    detail_url = f"{base_url}/index.cfm?zaction=auction&zmethod=details&AID={aid}" if aid else base_url
+
+    # Parse city and zip from the unlabeled continuation row, e.g. "WELLINGTON, FL- 33414"
+    city, zip_code = _parse_city_zip(city_zip_raw)
+
+    return {
+        "address": address_raw.strip() or case_number,
+        "city": city,
+        "county": county_name,
+        "state": "FL",
+        "zip": zip_code,
+        "auction_type": atype,
+        "opening_bid": _parse_dollar(bid_raw),
+        "sale_date": None,
+        "case_number": case_number,
+        "source_url": detail_url,
+        "source": "clerkauction",
+    }
+
+
+# ── helpers ────────────────────────────────────────────────
+
+def _parse_city_zip(raw: str) -> tuple[str, str]:
+    """Parse 'CITY, FL- 33414' or 'CITY FL 33414' into (city, zip)."""
+    raw = raw.strip()
+    # Strip trailing dash variants before zip
+    m = re.match(r"^([^,]+?)[\s,]+FL[-\s]*(\d{5})?", raw, re.IGNORECASE)
     if m:
-        return re.sub(r"\s+", "-", m.group(1).strip().upper())
-    m2 = re.search(r"\b(\d{2}[-]\d{4}[-]\w+)\b", text)
-    return m2.group(1) if m2 else ""
-
-
-def _extract_address(text_vals: list[str], cells) -> str:
-    for val in text_vals:
-        if re.search(r"\d{2,5}\s+[A-Za-z]", val) and len(val) > 10:
-            return val
-    return ""
-
-
-def _extract_bid(text_vals: list[str]) -> str:
-    for val in text_vals:
-        if "$" in val and re.search(r"\d", val):
-            return val
-    return ""
-
-
-def _extract_date_from_text(text: str) -> str:
-    m = re.search(r"\d{1,2}/\d{1,2}/\d{4}", text)
-    return m.group(0) if m else ""
+        return m.group(1).strip().title(), (m.group(2) or "")
+    m2 = re.search(r"(\d{5})", raw)
+    zip_code = m2.group(1) if m2 else ""
+    city = re.sub(r"[,\s]*FL.*", "", raw, flags=re.IGNORECASE).strip().title()
+    return city, zip_code
 
 
 def _parse_dollar(s: str) -> float | None:
-    s = re.sub(r"[^\d.]", "", s)
+    s = re.sub(r"[^\d.]", "", s or "")
     try:
         return float(s) if s else None
     except ValueError:
         return None
-
-
-def _parse_date(s: str) -> str | None:
-    s = (s or "").strip()
-    for fmt in ("%m/%d/%Y", "%m-%d-%Y", "%Y-%m-%d", "%B %d, %Y", "%b %d, %Y",
-                "%B %d %Y", "%b %d %Y"):
-        try:
-            return datetime.strptime(s, fmt).strftime("%Y-%m-%d")
-        except ValueError:
-            pass
-    return s or None
 
 
 def _split_address(raw: str) -> tuple[str, str, str]:
