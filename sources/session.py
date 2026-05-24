@@ -64,6 +64,8 @@ class _ScraperAPISession(requests.Session):
 
     The request to api.scraperapi.com is plain HTTP — no SSL cert issues.
     ScraperAPI fetches the real target over HTTPS from a residential IP.
+    render=true enables headless browser rendering to bypass Cloudflare/JS
+    bot detection. country_code=us forces a US residential IP.
     """
 
     def __init__(self, api_key: str):
@@ -77,9 +79,12 @@ class _ScraperAPISession(requests.Session):
             p = PreparedRequest()
             p.prepare_url(url, params)
             url = p.url
-        # Rewrite through ScraperAPI; residential IP routing needs more time
-        url = f"http://api.scraperapi.com?api_key={self._api_key}&url={quote(url, safe='')}"
-        kwargs["timeout"] = max(kwargs.get("timeout", 60), 60)
+        # Rewrite through ScraperAPI; render=true bypasses JS bot detection
+        url = (
+            f"http://api.scraperapi.com?api_key={self._api_key}"
+            f"&url={quote(url, safe='')}&render=true&country_code=us"
+        )
+        kwargs["timeout"] = max(kwargs.get("timeout", 90), 90)
         return super().get(url, **kwargs)
 
 
