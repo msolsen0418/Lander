@@ -368,7 +368,7 @@
 <!-- ── Sort bar ── -->
 <div class="sort-bar" role="group" aria-label="Sort options">
   <span class="sort-label">Sort:</span>
-  <button class="sort-btn active desc" data-sort="equity_pct">Equity %</button>
+  <button class="sort-btn active desc" data-sort="equity_gap_pct">Equity %</button>
   <button class="sort-btn" data-sort="sale_date">Sale Date</button>
   <button class="sort-btn" data-sort="opening_bid">Bid</button>
   <button class="sort-btn" data-sort="best_estimate">Estimate</button>
@@ -389,7 +389,7 @@
 <script>
 // ─── State ────────────────────────────────────────────────────────────────
 let allProps = [];
-let sortKey = 'equity_pct';
+let sortKey = 'equity_gap_pct';
 let sortDir = -1; // -1 = desc
 let deferredInstall = null;
 

@@ -17,14 +17,11 @@ from .session import make_direct_session
 
 logger = logging.getLogger(__name__)
 
-# (county_name, subdomain, auction_type)
-# These two counties were the original ClerkAuction targets.
-_COUNTIES = [
-    ("Palm Beach", "palmbeach", "foreclosure"),
-    ("Palm Beach", "palmbeach", "tax_deed"),
-    ("St. Lucie",  "stlucie",  "foreclosure"),
-    ("St. Lucie",  "stlucie",  "tax_deed"),
-]
+# Palm Beach and St. Lucie have moved to palmbeach.realforeclose.com and
+# stlucie.realforeclose.com — already covered by realforeclose_pw.py.
+# ClerkAuction DNS subdomains no longer resolve. List is empty to prevent
+# duplicate entries; kept for adding future counties if they join the platform.
+_COUNTIES: list = []
 
 # How many upcoming auction dates to scrape per county/type
 _MAX_DATES = 4
