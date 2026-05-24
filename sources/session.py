@@ -1,9 +1,13 @@
-"""Shared session factory with browser-like headers and SSL verification disabled.
+"""Shared session factory for listing scrapers.
 
-If SCRAPERAPI_KEY is set, all HTTPS requests are routed through ScraperAPI's
-residential proxy pool, bypassing IP-based blocks (e.g. realforeclose.com
-blocks AWS datacenter ranges).  Sign up free at https://www.scraperapi.com
-(1,000 req/month free tier).  Add SCRAPERAPI_KEY to Railway env vars.
+If SCRAPERAPI_KEY is set, GET requests are routed through ScraperAPI's
+URL-based API (http://api.scraperapi.com?api_key=KEY&url=TARGET).
+This is an HTTP request (no SSL on our side), so there are no SSL cert
+issues regardless of the target site.  ScraperAPI also rotates residential
+IPs, bypassing datacenter IP blocks on sites like realforeclose.com.
+
+Sign up free at https://www.scraperapi.com (1,000 req/month free tier).
+Add SCRAPERAPI_KEY as a Railway environment variable.
 """
 
 import os
@@ -11,6 +15,8 @@ import ssl
 import random
 import urllib3
 import requests
+from urllib.parse import quote
+from requests import PreparedRequest
 from requests.adapters import HTTPAdapter
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -37,21 +43,13 @@ _PROFILES = [
 
 
 def _no_verify_ctx() -> ssl.SSLContext:
-    """SSL context with cert verification disabled — compatible with all Python/urllib3 versions.
-    check_hostname must be cleared before verify_mode per Python ssl module rules."""
     ctx = ssl.create_default_context()
-    ctx.check_hostname = False      # must come before verify_mode
+    ctx.check_hostname = False
     ctx.verify_mode = ssl.CERT_NONE
     return ctx
 
 
 class _NoSSLAdapter(HTTPAdapter):
-    """HTTPAdapter that disables SSL verification via ssl_context.
-
-    Uses ssl_context (supported by urllib3 1.26+ and 2.x) rather than the
-    deprecated cert_reqs string kwarg which silently fails on urllib3 2.x.
-    """
-
     def init_poolmanager(self, connections, maxsize, block=False, **kw):
         self.poolmanager = urllib3.PoolManager(
             num_pools=connections,
@@ -60,15 +58,39 @@ class _NoSSLAdapter(HTTPAdapter):
             ssl_context=_no_verify_ctx(),
         )
 
-    def proxy_manager_for(self, proxy, **proxy_kwargs):
-        proxy_kwargs.setdefault("ssl_context", _no_verify_ctx())
-        return super().proxy_manager_for(proxy, **proxy_kwargs)
+
+class _ScraperAPISession(requests.Session):
+    """Session that rewrites every GET through ScraperAPI's URL-based API.
+
+    The request to api.scraperapi.com is plain HTTP — no SSL cert issues.
+    ScraperAPI fetches the real target over HTTPS from a residential IP.
+    """
+
+    def __init__(self, api_key: str):
+        super().__init__()
+        self._api_key = api_key
+
+    def get(self, url, **kwargs):
+        # Merge any params kwarg into the URL string first
+        params = kwargs.pop("params", None)
+        if params:
+            p = PreparedRequest()
+            p.prepare_url(url, params)
+            url = p.url
+        # Rewrite through ScraperAPI
+        url = f"http://api.scraperapi.com?api_key={self._api_key}&url={quote(url, safe='')}"
+        return super().get(url, **kwargs)
 
 
 def make_session() -> requests.Session:
     profile = random.choice(_PROFILES)
-    session = requests.Session()
-    session.mount("https://", _NoSSLAdapter())
+
+    if _SCRAPERAPI_KEY:
+        session = _ScraperAPISession(_SCRAPERAPI_KEY)
+    else:
+        session = requests.Session()
+        session.mount("https://", _NoSSLAdapter())
+
     session.headers.update(
         {
             "User-Agent": profile["User-Agent"],
@@ -87,10 +109,4 @@ def make_session() -> requests.Session:
             "Connection": "keep-alive",
         }
     )
-
-    if _SCRAPERAPI_KEY:
-        # Route through ScraperAPI residential proxies to bypass datacenter IP blocks.
-        proxy = f"http://scraperapi:{_SCRAPERAPI_KEY}@proxy-server.scraperapi.com:8001"
-        session.proxies.update({"http": proxy, "https": proxy})
-
     return session
