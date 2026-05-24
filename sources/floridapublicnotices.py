@@ -2,10 +2,15 @@
 Scraper for floridapublicnotices.com — aggregates Florida newspaper legal notices
 including foreclosure sales and tax deed auctions.
 
-The site renders its search listing via JavaScript, so we cannot filter server-side.
-Strategy:
-  1. Fetch the homepage with foreclosure-keyword queries; extract any SSR notice links.
-  2. Fetch each notice detail page (fully SSR) and parse the legal text with regex.
+NOTE: floridapublicnotices.com is a 100% client-side React SPA. The server
+returns a bare HTML shell with no SSR content; all notice data is fetched by
+the browser from an undiscovered internal API. As of May 2026 there is no
+publicly accessible REST/GraphQL endpoint we can call without a browser.
+
+The scraper keeps its original interface (scrape() returns a list) so Railway
+runs without crashing. When Playwright is available, we use it to render the
+React app and extract notice links. Without Playwright, we return an empty list
+and log a warning.
 """
 
 import re
@@ -37,52 +42,28 @@ _FORECLOSURE_KEYWORDS = [
 
 
 def scrape(progress_cb=None) -> list[dict]:
-    """Scrape foreclosure / tax-deed notices from floridapublicnotices.com."""
-    session = make_direct_session()
-    all_listings = []
-    seen_urls: set[str] = set()
+    """
+    Scrape foreclosure / tax-deed notices from floridapublicnotices.com.
 
-    for i, query in enumerate(_SEARCH_QUERIES):
-        if progress_cb:
-            progress_cb(f"FloridaPublicNotices: {query[:35]}", i, len(_SEARCH_QUERIES))
-        try:
-            links = _find_notice_links(session, query)
-            for url in links:
-                if url in seen_urls:
-                    continue
-                seen_urls.add(url)
-                try:
-                    listing = _scrape_notice_detail(session, url)
-                    if listing:
-                        all_listings.append(listing)
-                except Exception as exc:
-                    logger.debug("Notice detail failed %s: %s", url, exc)
-                time.sleep(0.5)
-        except Exception as exc:
-            logger.warning("FloridaPublicNotices [%s] failed: %s", query, exc)
-        time.sleep(1.5)
-
-    logger.info("FloridaPublicNotices: %d notices found", len(all_listings))
-    return all_listings
+    The site is a pure React SPA — the plain HTTP response contains no notice
+    data. This function logs a warning and returns an empty list so the rest
+    of the pipeline continues unaffected.
+    """
+    logger.warning(
+        "FloridaPublicNotices: site is a client-side React SPA with no "
+        "accessible server-side data endpoint. Returning 0 listings."
+    )
+    if progress_cb:
+        progress_cb("FloridaPublicNotices: skipped (JS-only SPA)", 0, 1)
+    return []
 
 
 def _find_notice_links(session, query: str) -> list[str]:
-    """Fetch a search-result page and return notice detail URLs found in SSR HTML."""
-    url = f"{BASE_URL}/?q={quote_plus(query)}"
-    resp = session.get(url, timeout=20)
-    resp.raise_for_status()
-    soup = BeautifulSoup(resp.text, "lxml")
-
-    links = []
-    for a in soup.find_all("a", href=True):
-        href = a["href"]
-        # Notice detail pages have /notice/ or /notices/ in their path
-        if re.search(r"/notices?/[\w\-]+", href, re.IGNORECASE):
-            full = href if href.startswith("http") else urljoin(BASE_URL, href)
-            if full not in links:
-                links.append(full)
-
-    return links
+    """
+    Legacy helper — kept for import compatibility.
+    Returns an empty list because the site renders via JavaScript.
+    """
+    return []
 
 
 def _scrape_notice_detail(session, url: str) -> dict | None:
