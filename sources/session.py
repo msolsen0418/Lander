@@ -13,10 +13,13 @@ Add SCRAPERAPI_KEY as a Railway environment variable.
 import os
 import ssl
 import random
+import logging
 import urllib3
 import requests
 from requests import PreparedRequest
 from requests.adapters import HTTPAdapter
+
+logger = logging.getLogger(__name__)
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -76,10 +79,21 @@ class _ScraperAPISession(requests.Session):
             p = PreparedRequest()
             p.prepare_url(url, params)
             url = p.url
-        # Route through ScraperAPI using params= so requests handles encoding
-        scraperapi_params = {"api_key": self._api_key, "url": url, "country_code": "us"}
+        # premium=true uses harder-to-detect proxies; country_code forces US IP
+        scraperapi_params = {
+            "api_key": self._api_key,
+            "url": url,
+            "country_code": "us",
+            "premium": "true",
+        }
         kwargs["timeout"] = max(kwargs.get("timeout", 90), 90)
-        return super().get("http://api.scraperapi.com", params=scraperapi_params, **kwargs)
+        resp = super().get("http://api.scraperapi.com", params=scraperapi_params, **kwargs)
+        if not resp.ok:
+            logger.error(
+                "ScraperAPI %d for %s — body: %s",
+                resp.status_code, url, resp.text[:400],
+            )
+        return resp
 
 
 def make_session() -> requests.Session:
