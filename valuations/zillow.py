@@ -15,7 +15,7 @@ import re
 import time
 import logging
 from urllib.parse import quote
-from sources.session import make_session
+from sources.session import make_proxy_session
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +25,7 @@ _session = None
 def _get_session():
     global _session
     if _session is None:
-        _session = make_session()
+        _session = make_proxy_session()
         # Zillow expects a referer
         _session.headers["Referer"] = "https://www.zillow.com/"
     return _session

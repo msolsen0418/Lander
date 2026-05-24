@@ -1,13 +1,22 @@
 """Shared session factory for listing scrapers.
 
-If SCRAPERAPI_KEY is set, GET requests are routed through ScraperAPI's
-URL-based API (http://api.scraperapi.com?api_key=KEY&url=TARGET).
-This is an HTTP request (no SSL on our side), so there are no SSL cert
-issues regardless of the target site.  ScraperAPI also rotates residential
-IPs, bypassing datacenter IP blocks on sites like realforeclose.com.
+Three session types:
+  make_direct_session()  — No proxy. Use for government/court sites accessible
+                           from Railway IPs (realforeclose.com county subdomains,
+                           county property appraiser sites).
 
-Sign up free at https://www.scraperapi.com (1,000 req/month free tier).
-Add SCRAPERAPI_KEY as a Railway environment variable.
+  make_proxy_session()   — Residential proxy for sites that block datacenter IPs
+                           (Zillow, Redfin). Priority order:
+                             1. HTTP_PROXY env var  (any SOCKS5/HTTP proxy URL,
+                                e.g. SmartProxy: http://user:pass@gate.smartproxy.com:7000)
+                             2. SCRAPERAPI_KEY env var
+                             3. Falls back to direct (expect 403 from Zillow/Redfin)
+
+  make_session()         — Legacy alias for make_proxy_session(). Kept so existing
+                           callers don't break.
+
+Recommended proxy for Railway: SmartProxy residential ~$3.50/GB.
+Set HTTP_PROXY=http://user:pass@gate.smartproxy.com:7000 in Railway env vars.
 """
 
 import os
@@ -24,6 +33,7 @@ logger = logging.getLogger(__name__)
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 _SCRAPERAPI_KEY = os.getenv("SCRAPERAPI_KEY", "")
+_HTTP_PROXY = os.getenv("HTTP_PROXY", "") or os.getenv("HTTPS_PROXY", "")
 
 _PROFILES = [
     {
@@ -96,11 +106,22 @@ class _ScraperAPISession(requests.Session):
         return resp
 
 
-def make_session() -> requests.Session:
-    """Session for realforeclose.com — routes through ScraperAPI when key is set."""
+def make_proxy_session() -> requests.Session:
+    """Session that routes through a residential proxy for anti-bot sites (Zillow, Redfin).
+
+    Priority:
+      1. HTTP_PROXY / HTTPS_PROXY env var — any proxy URL works
+         e.g. SmartProxy: http://user:pass@gate.smartproxy.com:7000
+      2. SCRAPERAPI_KEY env var
+      3. Direct request (will fail for Zillow/Redfin from Railway datacenter IPs)
+    """
     profile = random.choice(_PROFILES)
 
-    if _SCRAPERAPI_KEY:
+    if _HTTP_PROXY:
+        session = requests.Session()
+        session.mount("https://", _NoSSLAdapter())
+        session.proxies = {"http": _HTTP_PROXY, "https": _HTTP_PROXY}
+    elif _SCRAPERAPI_KEY:
         session = _ScraperAPISession(_SCRAPERAPI_KEY)
     else:
         session = requests.Session()
@@ -125,6 +146,11 @@ def make_session() -> requests.Session:
         }
     )
     return session
+
+
+def make_session() -> requests.Session:
+    """Legacy alias for make_proxy_session()."""
+    return make_proxy_session()
 
 
 def make_direct_session() -> requests.Session:
