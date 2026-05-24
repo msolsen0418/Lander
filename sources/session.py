@@ -1,49 +1,75 @@
-"""Shared session factory — uses cloudscraper to bypass WAF/Cloudflare on target sites."""
+"""Shared session factory with browser-like headers and SSL verification disabled.
 
-import ssl
+Uses a custom HTTPAdapter that overrides init_poolmanager to pass
+cert_reqs='CERT_NONE' directly to urllib3's PoolManager.  This avoids
+the "Cannot set verify_mode to CERT_NONE when check_hostname is enabled"
+error that occurs when patching an ssl.SSLContext after creation.
+"""
+
 import random
 import urllib3
-import cloudscraper
+import requests
+from requests.adapters import HTTPAdapter
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-_PLATFORMS = ["windows", "darwin", "linux"]
+_PROFILES = [
+    {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        "sec-ch-ua": '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
+        "sec-ch-ua-platform": '"Windows"',
+    },
+    {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        "sec-ch-ua": '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
+        "sec-ch-ua-platform": '"macOS"',
+    },
+    {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+        "sec-ch-ua": '"Google Chrome";v="123", "Not:A-Brand";v="8", "Chromium";v="123"',
+        "sec-ch-ua-platform": '"Windows"',
+    },
+]
 
 
-def make_session():
-    """Return a cloudscraper session with SSL verification disabled.
+class _NoSSLAdapter(HTTPAdapter):
+    """HTTPAdapter that disables SSL certificate verification at the pool level.
 
-    cloudscraper creates its own ssl.SSLContext (PROTOCOL_TLS_CLIENT) which
-    has check_hostname=True by default.  Setting session.verify=False after
-    the fact raises "Cannot set verify_mode to CERT_NONE when check_hostname
-    is enabled."  Instead we reach into the adapter's pool manager and patch
-    the context in-place — check_hostname=False must come first.
+    Passing cert_reqs as a string to urllib3.PoolManager lets urllib3 handle
+    the ssl context creation internally with both check_hostname and
+    verify_mode set correctly, avoiding Python's ssl module restriction.
     """
-    scraper = cloudscraper.create_scraper(
-        browser={
-            "browser": "chrome",
-            "platform": random.choice(_PLATFORMS),
-            "mobile": False,
+
+    def init_poolmanager(self, connections, maxsize, block=False, **kw):
+        self.poolmanager = urllib3.PoolManager(
+            num_pools=connections,
+            maxsize=maxsize,
+            block=block,
+            cert_reqs="CERT_NONE",
+            assert_hostname=False,
+        )
+
+
+def make_session() -> requests.Session:
+    profile = random.choice(_PROFILES)
+    session = requests.Session()
+    session.mount("https://", _NoSSLAdapter())
+    session.headers.update(
+        {
+            "User-Agent": profile["User-Agent"],
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Accept-Encoding": "gzip, deflate, br",
+            "sec-ch-ua": profile["sec-ch-ua"],
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": profile["sec-ch-ua-platform"],
+            "Sec-Fetch-Dest": "document",
+            "Sec-Fetch-Mode": "navigate",
+            "Sec-Fetch-Site": "none",
+            "Sec-Fetch-User": "?1",
+            "Upgrade-Insecure-Requests": "1",
+            "Cache-Control": "max-age=0",
+            "Connection": "keep-alive",
         }
     )
-
-    # Patch cloudscraper's SSL context to ignore cert errors
-    # (realforeclose.com CDN has a hostname mismatch on its certificate).
-    try:
-        adapter = scraper.get_adapter(url="https://x")
-        if hasattr(adapter, "poolmanager"):
-            ctx = adapter.poolmanager.connection_pool_kw.get("ssl_context")
-            if ctx:
-                ctx.check_hostname = False          # must be first
-                ctx.verify_mode = ssl.CERT_NONE
-            else:
-                # Older cloudscraper: rebuild pool manager without SSL verify
-                kw = {k: v for k, v in adapter.poolmanager.connection_pool_kw.items()
-                      if k != "ssl_context"}
-                kw["cert_reqs"] = "CERT_NONE"
-                kw["assert_hostname"] = False
-                adapter.poolmanager = urllib3.PoolManager(**kw)
-    except Exception:
-        pass  # best-effort; scraper still usable even if patch fails
-
-    return scraper
+    return session
