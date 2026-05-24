@@ -1,17 +1,20 @@
 """Shared session factory with browser-like headers and SSL verification disabled.
 
-Uses a custom HTTPAdapter that overrides init_poolmanager to pass
-cert_reqs='CERT_NONE' directly to urllib3's PoolManager.  This avoids
-the "Cannot set verify_mode to CERT_NONE when check_hostname is enabled"
-error that occurs when patching an ssl.SSLContext after creation.
+If SCRAPERAPI_KEY is set, all HTTPS requests are routed through ScraperAPI's
+residential proxy pool, bypassing IP-based blocks (e.g. realforeclose.com
+blocks AWS datacenter ranges).  Sign up free at https://www.scraperapi.com
+(1,000 req/month free tier).  Add SCRAPERAPI_KEY to Railway env vars.
 """
 
+import os
 import random
 import urllib3
 import requests
 from requests.adapters import HTTPAdapter
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+_SCRAPERAPI_KEY = os.getenv("SCRAPERAPI_KEY", "")
 
 _PROFILES = [
     {
@@ -33,12 +36,7 @@ _PROFILES = [
 
 
 class _NoSSLAdapter(HTTPAdapter):
-    """HTTPAdapter that disables SSL certificate verification at the pool level.
-
-    Passing cert_reqs as a string to urllib3.PoolManager lets urllib3 handle
-    the ssl context creation internally with both check_hostname and
-    verify_mode set correctly, avoiding Python's ssl module restriction.
-    """
+    """Disables SSL certificate verification at the urllib3 pool level."""
 
     def init_poolmanager(self, connections, maxsize, block=False, **kw):
         self.poolmanager = urllib3.PoolManager(
@@ -72,4 +70,10 @@ def make_session() -> requests.Session:
             "Connection": "keep-alive",
         }
     )
+
+    if _SCRAPERAPI_KEY:
+        # Route through ScraperAPI residential proxies to bypass datacenter IP blocks.
+        proxy = f"http://scraperapi:{_SCRAPERAPI_KEY}@proxy-server.scraperapi.com:8001"
+        session.proxies.update({"http": proxy, "https": proxy})
+
     return session
