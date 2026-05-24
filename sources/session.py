@@ -15,7 +15,6 @@ import ssl
 import random
 import urllib3
 import requests
-from urllib.parse import quote
 from requests import PreparedRequest
 from requests.adapters import HTTPAdapter
 
@@ -71,17 +70,16 @@ class _ScraperAPISession(requests.Session):
         self._api_key = api_key
 
     def get(self, url, **kwargs):
-        # Merge any params kwarg into the URL string first
+        # Merge any caller params into the target URL before proxying
         params = kwargs.pop("params", None)
         if params:
             p = PreparedRequest()
             p.prepare_url(url, params)
             url = p.url
-        # Rewrite through ScraperAPI; render=true uses headless browser to
-        # bypass JS-based bot detection (e.g. Cloudflare challenges).
-        url = f"http://api.scraperapi.com?api_key={self._api_key}&url={quote(url, safe='')}&render=true&country_code=us"
-        kwargs["timeout"] = max(kwargs.get("timeout", 60), 90)
-        return super().get(url, **kwargs)
+        # Route through ScraperAPI using params= so requests handles encoding
+        scraperapi_params = {"api_key": self._api_key, "url": url, "country_code": "us"}
+        kwargs["timeout"] = max(kwargs.get("timeout", 90), 90)
+        return super().get("http://api.scraperapi.com", params=scraperapi_params, **kwargs)
 
 
 def make_session() -> requests.Session:
