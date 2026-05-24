@@ -77,8 +77,9 @@ class _ScraperAPISession(requests.Session):
             p = PreparedRequest()
             p.prepare_url(url, params)
             url = p.url
-        # Rewrite through ScraperAPI
+        # Rewrite through ScraperAPI; residential IP routing needs more time
         url = f"http://api.scraperapi.com?api_key={self._api_key}&url={quote(url, safe='')}"
+        kwargs.setdefault("timeout", 60)
         return super().get(url, **kwargs)
 
 
