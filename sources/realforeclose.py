@@ -6,14 +6,9 @@ most Florida counties for tax deed and foreclosure sales.
 import re
 import time
 import logging
-import urllib3
 from datetime import datetime
 from bs4 import BeautifulSoup
 from .session import make_session
-
-# RealForeclose.com has a certificate hostname mismatch on their CDN;
-# suppress the warning so it doesn't flood logs.
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +33,6 @@ def scrape(max_counties: int = None, progress_cb=None) -> list[dict]:
         List of property dicts ready for database.upsert_property().
     """
     session = make_session()
-    session.verify = False  # realforeclose.com CDN cert has hostname mismatch
     counties = _discover_counties(session)
     if max_counties:
         counties = counties[:max_counties]
